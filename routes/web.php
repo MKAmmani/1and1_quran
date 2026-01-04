@@ -68,6 +68,10 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/quran/surah/{surah}', [QuranController::class, 'showSurah']);
     Route::get('/quran/ayah/{surah}/{ayah}', [QuranController::class, 'getAyah']);
+    Route::get('/quran/ayahs/{surah}/{startAyah}/{count?}', [QuranController::class, 'getMultipleAyahs']);
+    Route::get('/quran/surahs', [QuranController::class, 'surahs']);
+    Route::get('/quran/chapters', [QuranController::class, 'getChapters']);
+    Route::post('/live-sessions/{liveSession}/quran-verse', [TeacherController::class, 'changeQuranVerse']);
 });
 
 require __DIR__ . '/auth.php';

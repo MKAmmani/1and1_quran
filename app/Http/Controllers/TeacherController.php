@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\QuranVerseChanged;
 use App\Models\LiveSession;
 use Illuminate\Http\Request;
 
@@ -113,5 +114,22 @@ class TeacherController extends Controller
 
     public function getLiveSessions(){
         return LiveSession::where('status', 'live')->with('teacher')->get();
+    }
+
+    public function changeQuranVerse(Request $request, LiveSession $liveSession)
+    {
+        if ($liveSession->teacher_id !== auth()->id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'surah' => 'required|integer|min:1|max:114',
+            'ayah' => 'required|integer|min:1',
+            'surah_name' => 'required|string',
+        ]);
+
+        broadcast(new QuranVerseChanged($liveSession->id, $validated['surah'], $validated['ayah'], $validated['surah_name']));
+
+        return response()->json(['success' => true]);
     }
 }

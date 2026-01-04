@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import axios from 'axios'
 import client, { initZoom } from '@/zoom/client'
 import { router, usePage, Link } from '@inertiajs/vue3'
@@ -35,6 +35,70 @@ const token = ref(props.sessionToken)
 
 let mediaStream = null
 let zoomReady = false
+
+const surahs = ref([]);
+const selectedSurah = ref(null);
+const selectedAyah = ref(null);
+const currentVerses = ref([]);
+const isQuranView = ref(false);
+
+watch(selectedSurah, (newSurah, oldSurah) => {
+  if (newSurah !== oldSurah) {
+    selectedAyah.value = null;
+  }
+});
+
+const fetchSurahs = async () => {
+  try {
+    const response = await axios.get('/quran/chapters');
+    surahs.value = response.data.chapters;
+  } catch (error) {
+    console.error('Error fetching surahs:', error);
+  }
+};
+
+const displayVerse = async () => {
+  if (!selectedSurah.value || !selectedAyah.value) {
+    alert('Please select a Surah and Ayah.');
+    return;
+  }
+  try {
+    await axios.post(`/live-sessions/${props.liveSessionId}/quran-verse`, {
+      surah: selectedSurah.value.id,
+      ayah: selectedAyah.value,
+      surah_name: selectedSurah.value.name_simple,
+    });
+  } catch (error) {
+    console.error('Error broadcasting verse selection:', error);
+  }
+};
+
+const displayNextVerses = async () => {
+  if (!selectedSurah.value || !selectedAyah.value) return;
+  
+  const nextAyah = Math.min(selectedAyah.value + 4, selectedSurah.value.verses_count);
+  if (nextAyah !== selectedAyah.value) {
+    selectedAyah.value = nextAyah;
+    await displayVerse();
+  }
+};
+
+const displayPreviousVerses = async () => {
+  if (!selectedSurah.value || !selectedAyah.value) return;
+  
+  const prevAyah = Math.max(selectedAyah.value - 4, 1);
+  if (prevAyah !== selectedAyah.value) {
+    selectedAyah.value = prevAyah;
+    await displayVerse();
+  }
+};
+
+const switchToVideoView = () => {
+  isQuranView.value = false;
+  currentVerses.value = [];
+};
+
+
 
 /* ---------------- UI HELPERS ---------------- */
 const openChat = () => (isChatOpen.value = true)
@@ -303,6 +367,9 @@ onMounted(async () => {
     // Fetch initial chat messages
     await fetchMessages()
 
+    // Fetch surahs
+    await fetchSurahs();
+
     /* -------- ZOOM EVENTS -------- */
     client.on('user-added', ({ userId }) => {
       syncParticipants()
@@ -357,6 +424,17 @@ onMounted(async () => {
             scrollToBottom()
           }
         })
+        .listen('.quran.verse.changed', async (e) => {
+            console.log('Received Quran verse change event:', e);
+            try {
+                const response = await axios.get(`/quran/ayahs/${e.surah}/${e.ayah}/4`);
+                console.log('Quran API response received');
+                currentVerses.value = response.data.verses;
+                isQuranView.value = true;
+            } catch (error) {
+                console.error('Error fetching verses:', error);
+            }
+        });
     }
   } catch (e) {
     console.error('Zoom init failed', e)
@@ -506,65 +584,95 @@ onUnmounted(async () => {
                         class="flex-1 bg-surface-light dark:bg-surface-dark rounded-2xl border border-border-light dark:border-border-dark flex flex-col overflow-hidden relative shadow-sm">
                         <div
                             class="flex-1 relative bg-[#FDFDFD] dark:bg-[#252525] flex items-center justify-center p-4 overflow-auto">
-                            <div class="max-w-4xl w-full h-full flex items-center justify-center relative">
-  <!-- Video container for Zoom SDK -->
-                <div id="video-container" ref="videoContainer"
-                  class="w-full h-full flex items-center justify-center bg-black rounded-lg video-player-container" style="z-index: 1;">
-                </div>
+                            <div v-if="isQuranView" class="max-w-4xl w-full h-full flex flex-col items-center justify-center relative text-center">
+                                <div v-if="currentVerses && currentVerses.length > 0" class="w-full h-full overflow-y-auto space-y-6 p-4">
+                                    <div v-for="verse in currentVerses" :key="verse.id" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                                        <div class="flex items-center justify-center mb-4">
+                                            <span class="bg-primary-hover text-white px-3 py-1 rounded-full text-sm font-medium">
+                                                Verse {{ verse.verse_number }}
+                                            </span>
+                                        </div>
+                                        <p class="text-3xl font-arabic leading-loose mb-4 text-right" dir="rtl" style="font-family: 'Amiri', 'Noto Sans Arabic', 'Tajawal', serif;">
+                                            {{ verse.text_uthmani }}
+                                        </p>
+                                        <p class="text-base text-gray-600 dark:text-gray-300 text-left">
+                                            {{ verse.translations ? verse.translations[0]?.text : 'Translation loading...' }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div v-else class="text-gray-500">Loading verses...</div>
+                            </div>
+                            <div v-else class="max-w-4xl w-full h-full flex items-center justify-center relative">
+                                <!-- Video container for Zoom SDK -->
+                                <div id="video-container" ref="videoContainer"
+                                class="w-full h-full flex items-center justify-center bg-black rounded-lg video-player-container" style="z-index: 1;">
+                                </div>
 
-                <!-- Controls overlay -->
-                <div
-                  class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full z-10">
-                  <button @click="toggleScreenShare" class="text-white hover:text-primary transition-colors p-2">
-                    <span class="material-icons-outlined text-xl">present_to_all</span>
-                  </button>
-                  <button @click="toggleAudio" class="text-white hover:text-primary transition-colors p-2 relative">
-                    <span class="material-icons-outlined text-xl">{{ isAudioOn ? 'mic' : 'mic_off' }}</span>
-                    <span v-if="isAudioOn" class="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full">
-                    </span>
-                    <span v-else class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full">
-                    </span>
-                  </button>
-                  <button @click="toggleVideo" class="text-white hover:text-primary transition-colors p-2 relative">
-                    <span class="material-icons-outlined text-xl">{{ isVideoOn ? 'videocam' : 'videocam_off' }}</span>
-                    <span v-if="!isVideoOn" class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full">
-                    </span>
-                  </button>
-                </div>
-              </div>
-
+                                <!-- Controls overlay -->
+                                <div
+                                class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full z-10">
+                                <button @click="toggleScreenShare" class="text-white hover:text-primary transition-colors p-2">
+                                    <span class="material-icons-outlined text-xl">present_to_all</span>
+                                </button>
+                                <button @click="toggleAudio" class="text-white hover:text-primary transition-colors p-2 relative">
+                                    <span class="material-icons-outlined text-xl">{{ isAudioOn ? 'mic' : 'mic_off' }}</span>
+                                    <span v-if="isAudioOn" class="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full">
+                                    </span>
+                                    <span v-else class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full">
+                                    </span>
+                                </button>
+                                <button @click="toggleVideo" class="text-white hover:text-primary transition-colors p-2 relative">
+                                    <span class="material-icons-outlined text-xl">{{ isVideoOn ? 'videocam' : 'videocam_off' }}</span>
+                                    <span v-if="!isVideoOn" class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full">
+                                    </span>
+                                </button>
+                                </div>
+                            </div>
                         </div>
                         <div
                             class="h-16 border-t border-border-light dark:border-border-dark flex items-center justify-between px-6 bg-surface-light dark:bg-surface-dark">
-                            <button
+                            <button v-if="isQuranView" @click="switchToVideoView"
                                 class="bg-primary hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                                Full quran view
+                                Show Video
                             </button>
-                            <div class="relative">
-                                <button
-                                    class="flex items-center gap-10 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm">
-                                    <span class="text-text-secondary-light dark:text-text-secondary-dark">Select
-                                        surah</span>
-                                    <span class="material-icons-outlined text-lg">expand_more</span>
-                                </button>
+                            <button v-else
+                                @click="isQuranView = true"
+                                class="bg-primary hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                Full Quran View
+                            </button>
+                            <div class="flex items-center gap-2">
+                                <div class="relative">
+                                    <select v-model="selectedSurah" class="flex items-center gap-10 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm">
+                                        <option :value="null" disabled>Select Surah</option>
+                                        <option v-for="surah in surahs" :key="surah.id" :value="surah">
+                                            {{ surah.name_simple }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="relative" v-if="selectedSurah">
+                                     <select v-model="selectedAyah" class="flex items-center gap-10 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm">
+                                        <option :value="null" disabled>Select Ayah</option>
+                                        <option v-for="ayah in selectedSurah.verses_count" :key="ayah" :value="ayah">
+                                            {{ ayah }}
+                                        </option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="flex items-center gap-4">
-                                <div class="flex flex-col items-center cursor-pointer group">
-                                    <button
-                                        class="w-10 h-10 bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center rounded-lg group-hover:bg-primary group-hover:text-white transition-colors">
-                                        <span class="material-icons text-2xl rotate-180">play_arrow</span>
-                                    </button>
-                                    <span
-                                        class="text-[10px] text-text-secondary-light dark:text-text-secondary-dark mt-1">Next</span>
-                                </div>
-                                <div class="flex flex-col items-center cursor-pointer group">
-                                    <button
-                                        class="w-10 h-10 bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center rounded-lg group-hover:bg-primary group-hover:text-white transition-colors">
-                                        <span class="material-icons text-2xl">play_arrow</span>
-                                    </button>
-                                    <span
-                                        class="text-[10px] text-text-secondary-light dark:text-text-secondary-dark mt-1">Prev</span>
-                                </div>
+                                <button @click="displayPreviousVerses"
+                                    class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                                    :disabled="!selectedSurah || !selectedAyah || selectedAyah <= 1">
+                                    ← Prev
+                                </button>
+                                <button @click="displayVerse"
+                                    class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                    Display
+                                </button>
+                                <button @click="displayNextVerses"
+                                    class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                                    :disabled="!selectedSurah || !selectedAyah || selectedAyah >= selectedSurah.verses_count">
+                                    Next →
+                                </button>
                             </div>
                         </div>
                     </div>

@@ -21,6 +21,11 @@ const isVideoOn = ref(false); // Student's video is off by default
 const isAudioOn = ref(true);
 const participants = ref([]);
 
+const currentVerses = ref([]);
+const isQuranView = ref(false);
+const selectedSurah = ref(null);
+const selectedAyah = ref(null);
+
 let mediaStream = null;
 
 // Sync participants with Zoom client
@@ -268,10 +273,6 @@ onMounted(async () => {
     // Start local audio
     await mediaStream.startAudio({ audio: true });
     console.log('Local audio started.');
-    
-    // Start local audio
-    await mediaStream.startAudio({ audio: true });
-    console.log('Local audio started.');
 
     const renderVideo = async (participant) => {
       if (participant.bVideoOn) {
@@ -376,6 +377,19 @@ onMounted(async () => {
             }
             scrollToBottom();
           }
+        })
+        .listen('.quran.verse.changed', async (e) => {
+            console.log('Received Quran verse change event:', e);
+            try {
+                const response = await axios.get(`/quran/ayahs/${e.surah}/${e.ayah}/4`);
+                console.log('Quran API response received');
+                currentVerses.value = response.data.verses;
+                selectedSurah.value = e.surahName;
+                selectedAyah.value = e.ayah;
+                isQuranView.value = true;
+            } catch (error) {
+                console.error('Error fetching verses:', error);
+            }
         });
       console.log('Echo listener started.');
     }
@@ -520,7 +534,25 @@ onUnmounted(() => {
               class="flex-1 bg-surface-light dark:bg-surface-dark rounded-2xl border border-border-light dark:border-border-dark flex flex-col overflow-hidden relative shadow-sm">
             <div
                 class="flex-1 relative bg-[#FDFDFD] dark:bg-[#252525] flex items-center justify-center p-4 overflow-auto">
-              <div class="max-w-4xl w-full h-full flex items-center justify-center relative">
+                <div v-if="isQuranView" class="max-w-4xl w-full h-full flex flex-col items-center justify-center relative text-center">
+                    <div v-if="currentVerses && currentVerses.length > 0" class="w-full h-full overflow-y-auto space-y-6 p-4">
+                        <div v-for="verse in currentVerses" :key="verse.id" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center justify-center mb-4">
+                                <span class="bg-primary text-white px-3 py-1 rounded-full text-sm font-medium">
+                                    Verse {{ verse.verse_number }}
+                                </span>
+                            </div>
+                            <p class="text-3xl font-arabic leading-loose mb-4 text-right" dir="rtl" style="font-family: 'Amiri', 'Noto Sans Arabic', 'Tajawal', serif;">
+                                {{ verse.text_uthmani }}
+                            </p>
+                            <p class="text-base text-gray-600 dark:text-gray-300 text-left">
+                                {{ verse.translations ? verse.translations[0]?.text : 'Translation loading...' }}
+                            </p>
+                        </div>
+                    </div>
+                    <div v-else class="text-gray-500">Loading verses...</div>
+                </div>
+              <div v-else class="max-w-4xl w-full h-full flex items-center justify-center relative">
                 <!-- Video container for Zoom SDK -->
                 <div id="video-container" class="w-full h-full flex items-center justify-center bg-black rounded-lg video-player-container" style="z-index: 1;"></div>
                 <div

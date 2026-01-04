@@ -15,6 +15,8 @@ export default {
         extend: {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                display: ["Inter", "sans-serif"],
+                arabic: ["Amiri", "Noto Sans Arabic", "Tajawal", "serif"],
             },
             colors: {
                 primary: "#009688", // Teal/Green from the screenshot
@@ -30,7 +32,20 @@ export default {
                 "border-light": "#E5E7EB",
                 "border-dark": "#374151",
                 "danger": "#EF4444",
-                teal: { 600: '#0d9488', 500: '#14b8a6' }
+                teal: { 600: '#0d9488', 500: '#14b8a6' },
+
+                primary: "#009688", // Teal color from the active nav item
+                        "primary-hover": "#54cdbfff",
+                        "background-light": "#F8F9FA",
+                        "background-dark": "#121212",
+                        "surface-light": "#FFFFFF",
+                        "surface-dark": "#1E1E1E",
+                        "text-light": "#333333",
+                        "text-dark": "#E0E0E0",
+                        "muted-light": "#757575",
+                        "muted-dark": "#A0A0A0",
+                        "border-light": "#E0E0E0",
+                        "border-dark": "#333333",
             },
             borderRadius: {
                 DEFAULT: "0.5rem",
