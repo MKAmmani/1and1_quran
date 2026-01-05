@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import axios from 'axios'
 import client, { initZoom } from '@/zoom/client'
 import { router, usePage, Link } from '@inertiajs/vue3'
@@ -41,12 +41,15 @@ const selectedSurah = ref(null);
 const selectedAyah = ref(null);
 const currentVerses = ref([]);
 const isQuranView = ref(false);
+const surahSearchQuery = ref('');
+const isSurahDropdownOpen = ref(false);
 
 watch(selectedSurah, (newSurah, oldSurah) => {
   if (newSurah !== oldSurah) {
     selectedAyah.value = null;
   }
 });
+
 
 const fetchSurahs = async () => {
   try {
@@ -97,6 +100,17 @@ const switchToVideoView = () => {
   isQuranView.value = false;
   currentVerses.value = [];
 };
+
+const selectSurah = (surah) => {
+  selectedSurah.value = surah;
+  isSurahDropdownOpen.value = false;
+};
+
+const clearSurahSelection = () => {
+  selectedSurah.value = null;
+  selectedAyah.value = null;
+};
+
 
 
 
@@ -259,6 +273,9 @@ const endSession = async () => {
 
 /* ---------------- ZOOM LIFECYCLE ---------------- */
 onMounted(async () => {
+  // Always fetch surahs regardless of session state
+  await fetchSurahs();
+
   await nextTick()
   if (!props.sessionName || !props.userName) return
 
@@ -366,9 +383,6 @@ onMounted(async () => {
 
     // Fetch initial chat messages
     await fetchMessages()
-
-    // Fetch surahs
-    await fetchSurahs();
 
     /* -------- ZOOM EVENTS -------- */
     client.on('user-added', ({ userId }) => {
@@ -642,12 +656,23 @@ onUnmounted(async () => {
                             </button>
                             <div class="flex items-center gap-2">
                                 <div class="relative">
-                                    <select v-model="selectedSurah" class="flex items-center gap-10 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm">
+                                    <select
+                                        v-model="selectedSurah"
+                                        @change="isSurahDropdownOpen = false"
+                                        class="flex items-center px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm w-48 appearance-none"
+                                    >
                                         <option :value="null" disabled>Select Surah</option>
-                                        <option v-for="surah in surahs" :key="surah.id" :value="surah">
+                                        <option
+                                            v-for="surah in surahs"
+                                            :key="surah.id"
+                                            :value="surah"
+                                        >
                                             {{ surah.name_simple }}
                                         </option>
                                     </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-text-secondary-light dark:text-text-secondary-dark">
+                                        <span class="material-icons text-sm">expand_more</span>
+                                    </div>
                                 </div>
                                 <div class="relative" v-if="selectedSurah">
                                      <select v-model="selectedAyah" class="flex items-center gap-10 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm">
@@ -659,20 +684,30 @@ onUnmounted(async () => {
                                 </div>
                             </div>
                             <div class="flex items-center gap-4">
-                                <button @click="displayPreviousVerses"
-                                    class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                                    :disabled="!selectedSurah || !selectedAyah || selectedAyah <= 1">
-                                    ← Prev
-                                </button>
+                                <div class="flex flex-col items-center cursor-pointer group">
+                                  <button
+                                      @click="displayPreviousVerses"
+                                      :disabled="!selectedSurah || !selectedAyah || selectedAyah <= 1"
+                                      class="w-10 h-10 bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center rounded-lg group-hover:bg-primary group-hover:text-white transition-colors">
+                                    <span class="material-icons text-2xl rotate-180">play_arrow</span>
+                                  </button>
+                                  <span
+                                      class="text-[10px] text-text-secondary-light dark:text-text-secondary-dark mt-1">Prev</span>
+                                </div>
                                 <button @click="displayVerse"
                                     class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                                     Display
                                 </button>
-                                <button @click="displayNextVerses"
-                                    class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                                    :disabled="!selectedSurah || !selectedAyah || selectedAyah >= selectedSurah.verses_count">
-                                    Next →
-                                </button>
+                                <div class="flex flex-col items-center cursor-pointer group">
+                                  <button
+                                      @click="displayNextVerses"
+                                      :disabled="!selectedSurah || !selectedAyah || selectedAyah >= selectedSurah.verses_count"
+                                      class="w-10 h-10 bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center rounded-lg group-hover:bg-primary group-hover:text-white transition-colors">
+                                    <span class="material-icons text-2xl">play_arrow</span>
+                                  </button>
+                                  <span
+                                      class="text-[10px] text-text-secondary-light dark:text-text-secondary-dark mt-1">Next</span>
+                                </div>
                             </div>
                         </div>
                     </div>
