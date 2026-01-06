@@ -15,7 +15,7 @@ export default {
         extend: {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
-                display: ["Inter", "sans-serif"],
+                display: ["Inter", "sans-serif","Poppins"],
                 arabic: ["Amiri", "Noto Sans Arabic", "Tajawal", "serif"],
             },
             colors: {
@@ -52,6 +52,11 @@ export default {
                 'xl': '1rem',
                 '2xl': '1.5rem',
             },
+            spacing: {
+                '72': '18rem',
+                '84': '21rem',
+                '96': '24rem',
+            }
         },
     },
 

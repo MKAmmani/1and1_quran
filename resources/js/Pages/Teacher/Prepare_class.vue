@@ -1,6 +1,52 @@
 <script setup>
-import { router, Link } from "@inertiajs/vue3";
-import { ref, onMounted, onUnmounted } from 'vue';
+import { router, Link, usePage } from "@inertiajs/vue3";
+import { ref, onMounted, onUnmounted, computed } from 'vue';
+import axios from 'axios';
+
+const props = defineProps({
+    students: Array,
+    surahs: Array,
+});
+
+const page = usePage();
+
+const currentDate = computed(() => {
+    return new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
+});
+
+const form = ref({
+    students: [],
+    title: '',
+    surah_id: null,
+    page: null,
+    date: '',
+    time: '',
+    notes: '',
+});
+
+const scheduleClass = () => {
+    router.post(route('class.schedule'), form.value);
+};
+
+const startClass = async () => {
+    try {
+        const response = await axios.post(route('live-class.start'), form.value);
+        if (response.data && response.data.success) {
+            router.visit(route('live'));
+        } else {
+            console.error('Failed to start live session:', response.data.message);
+            alert('Failed to start live session. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error starting live session:', error);
+        alert('Failed to start live session. Please try again.');
+    }
+};
 
 const logout = () => {
     router.post(route("logout"));
@@ -230,12 +276,7 @@ onMounted(() => {
                             Settings
                         </a>
                     </div>
-                    <Link
-                        :href="route('logout')"
-                        method="post"
-                        as="button"
-                        class="flex items-center gap-4 text-gray-700 px-6 py-4 rounded-lg hover:bg-gray-100 mt-auto w-full text-left"
-                    >
+                    <button @click="logout" class="flex items-center gap-4 text-gray-700 px-6 py-4 rounded-lg hover:bg-gray-100 mt-auto w-full text-left">
                         <svg
                             class="w-6 h-6"
                             fill="none"
@@ -250,7 +291,7 @@ onMounted(() => {
                             />
                         </svg>
                         Logout
-                    </Link>
+                    </button>
                 </nav>
             </aside>
 
@@ -259,13 +300,13 @@ onMounted(() => {
             <!-- Header -->
             <header class="flex justify-between items-center mb-10">
                 <div>
-                    <h1 class="text-2xl font-semibold">Assalaikum Alaykum, Ustadha Aisha</h1>
-                    <p class="text-gray-500">Monday, January 30 2023</p>
+                    <h1 class="text-2xl font-semibold">Assalaikum Alaykum, {{ $page.props.auth.user.first_name }}</h1>
+                    <p class="text-gray-500">{{ currentDate }}</p>
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="text-right">
-                        <p class="font-medium">Aisha</p>
-                        <p class="text-sm text-gray-500">info@aisha.com</p>
+                        <p class="font-medium">{{ $page.props.auth.user.first_name }} {{ $page.props.auth.user.last_name }}</p>
+                        <p class="text-sm text-gray-500">{{ $page.props.auth.user.email }}</p>
                     </div>
                     <div class="w-12 h-12 bg-gray-200 rounded-full border-2 border-dashed"></div>
                 </div>
@@ -279,97 +320,22 @@ onMounted(() => {
                 <h3 class="text-xl font-semibold mb-6">Select students</h3>
 
                 <div class="space-y-4 mb-10">
-                    <!-- Student Row 1 -->
-                    <div class="grid grid-cols-12 gap-2 items-center">
+                    <!-- Student Row -->
+                    <div v-for="student in students" :key="student.id" class="grid grid-cols-12 gap-2 items-center">
                         <div class="col-span-1 flex justify-center">
                             <label class="flex items-center cursor-pointer">
-                                <input type="checkbox" class="w-5 h-5 text-teal-600 bg-white border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 checked:bg-teal-600 checked:border-teal-600" checked>
+                                <input type="checkbox" :value="student.id" v-model="form.students" class="w-5 h-5 text-teal-600 bg-white border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 checked:bg-teal-600 checked:border-teal-600">
                             </label>
                         </div>
                         <div class="col-span-2">
-                            <p class="font-medium text-lg">Salmah</p>
-                            <p class="text-sm text-gray-500">13 of 114 surahs</p>
+                            <p class="font-medium text-lg">{{ student.first_name }}</p>
+                            <p class="text-sm text-gray-500">0 of 114 surahs</p>
                         </div>
                         <div class="col-span-6">
                             <div class="w-full bg-gray-200 rounded-full h-3">
-                                <div class="bg-teal-600 h-3 rounded-full" style="width: 11%"></div>
+                                <div class="bg-teal-600 h-3 rounded-full" style="width: 0%"></div>
                             </div>
-                            <p class="text-sm text-gray-600 mt-1">11% completed</p>
-                        </div>
-                        <div class="col-span-2 flex justify-end">
-                            <span class="flex items-center gap-2 text-green-600"><span class="w-3 h-3 bg-green-600 rounded-full"></span> Online</span>
-                        </div>
-                        <div class="col-span-1 flex justify-center">
-                            <button class="text-gray-400 text-xl leading-none">⋮</button>
-                        </div>
-                    </div>
-
-                    <!-- Student Row 2 -->
-                    <div class="grid grid-cols-12 gap-2 items-center">
-                        <div class="col-span-1 flex justify-center">
-                            <label class="flex items-center cursor-pointer">
-                                <input type="checkbox" class="w-5 h-5 text-teal-600 bg-white border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 checked:bg-teal-600 checked:border-teal-600" checked>
-                            </label>
-                        </div>
-                        <div class="col-span-2">
-                            <p class="font-medium text-lg">Ali</p>
-                            <p class="text-sm text-gray-500">33 of 114 surahs</p>
-                        </div>
-                        <div class="col-span-6">
-                            <div class="w-full bg-gray-200 rounded-full h-3">
-                                <div class="bg-teal-600 h-3 rounded-full" style="width: 21%"></div>
-                            </div>
-                            <p class="text-sm text-gray-600 mt-1">21% completed</p>
-                        </div>
-                        <div class="col-span-2 flex justify-end">
-                            <span class="flex items-center gap-2 text-green-600"><span class="w-3 h-3 bg-green-600 rounded-full"></span> Online</span>
-                        </div>
-                        <div class="col-span-1 flex justify-center">
-                            <button class="text-gray-400 text-xl leading-none">⋮</button>
-                        </div>
-                    </div>
-
-                    <!-- Student Row 3 -->
-                    <div class="grid grid-cols-12 gap-2 items-center">
-                        <div class="col-span-1 flex justify-center">
-                            <label class="flex items-center cursor-pointer">
-                                <input type="checkbox" class="w-5 h-5 text-teal-600 bg-white border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 checked:bg-teal-600 checked:border-teal-600" checked>
-                            </label>
-                        </div>
-                        <div class="col-span-2">
-                            <p class="font-medium text-lg">Rashad</p>
-                            <p class="text-sm text-gray-500">16 of 114 surahs</p>
-                        </div>
-                        <div class="col-span-6">
-                            <div class="w-full bg-gray-200 rounded-full h-3">
-                                <div class="bg-teal-600 h-3 rounded-full" style="width: 16%"></div>
-                            </div>
-                            <p class="text-sm text-gray-600 mt-1">16% completed</p>
-                        </div>
-                        <div class="col-span-2 flex justify-end">
-                            <span class="flex items-center gap-2 text-red-600"><span class="w-3 h-3 bg-red-600 rounded-full"></span> Offline</span>
-                        </div>
-                        <div class="col-span-1 flex justify-center">
-                            <button class="text-gray-400 text-xl leading-none">⋮</button>
-                        </div>
-                    </div>
-
-                    <!-- Student Row 4 -->
-                    <div class="grid grid-cols-12 gap-2 items-center">
-                        <div class="col-span-1 flex justify-center">
-                            <label class="flex items-center cursor-pointer">
-                                <input type="checkbox" class="w-5 h-5 text-teal-600 bg-white border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 checked:bg-teal-600 checked:border-teal-600">
-                            </label>
-                        </div>
-                        <div class="col-span-2">
-                            <p class="font-medium text-lg">Rashad</p>
-                            <p class="text-sm text-gray-500">16 of 114 surahs</p>
-                        </div>
-                        <div class="col-span-6">
-                            <div class="w-full bg-gray-200 rounded-full h-3">
-                                <div class="bg-teal-600 h-3 rounded-full" style="width: 16%"></div>
-                            </div>
-                            <p class="text-sm text-gray-600 mt-1">16% completed</p>
+                            <p class="text-sm text-gray-600 mt-1">0% completed</p>
                         </div>
                         <div class="col-span-2 flex justify-end">
                             <span class="flex items-center gap-2 text-red-600"><span class="w-3 h-3 bg-red-600 rounded-full"></span> Offline</span>
@@ -390,17 +356,20 @@ onMounted(() => {
                     <div class="space-y-6">
                         <div>
                             <label class="block text-lg font-medium mb-2">Surah</label>
-                            <select class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                                <option>Surah</option>
+                            <select v-model="form.surah_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                                <option :value="null">Select Surah</option>
+                                <option v-for="surah in surahs" :key="surah.id" :value="surah.id">
+                                    {{ surah.name_simple }}
+                                </option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-lg font-medium mb-2">Title</label>
-                            <input type="text" placeholder="Suratul Waqiah" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <input v-model="form.title" type="text" placeholder="Suratul Waqiah" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
                         </div>
                         <div>
                             <label class="block text-lg font-medium mb-2">Date</label>
-                            <input type="text" placeholder="January 13, 2015" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <input v-model="form.date" type="date" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
                         </div>
                     </div>
 
@@ -408,22 +377,22 @@ onMounted(() => {
                     <div class="space-y-6">
                         <div>
                             <label class="block text-lg font-medium mb-2">Page</label>
-                            <input type="text" placeholder="page" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <input v-model="form.page" type="number" placeholder="page" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
                         </div>
                         <div>
                             <label class="block text-lg font-medium mb-2">Notes (Optional)</label>
-                            <input type="text" placeholder="Focus on tajweed" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <input v-model="form.notes" type="text" placeholder="Focus on tajweed" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
                         </div>
                         <div>
                             <label class="block text-lg font-medium mb-2">Time</label>
-                            <input type="time" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
+                            <input v-model="form.time" type="time" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
                         </div>
                     </div>
 
                     <!-- Third Column: Start class, Schedule class -->
                     <div class="flex flex-col justify-start space-y-4 h-full pt-4">
-                        <button class="bg-teal-600 text-white px-6 py-4 rounded-lg font-bold hover:bg-teal-700">Start class</button>
-                        <button class="border-2 border-teal-600 text-teal-600 px-6 py-4 rounded-lg font-bold hover:bg-teal-50">Schedule class</button>
+                        <button @click="startClass" class="bg-teal-600 text-white px-6 py-4 rounded-lg font-bold hover:bg-teal-700">Start class</button>
+                        <button @click="scheduleClass" class="border-2 border-teal-600 text-teal-600 px-6 py-4 rounded-lg font-bold hover:bg-teal-50">Schedule class</button>
                     </div>
                 </div>
             </section>

@@ -1,8 +1,22 @@
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, ref, computed } from 'vue'
+import { Link } from '@inertiajs/vue3';
 
-defineProps({
-  surah: Object
+const props = defineProps({
+  surahs: Object
+});
+
+const search = ref('')
+
+const filteredSurahs = computed(() => {
+    if (!search.value) {
+        return props.surahs.chapters;
+    }
+    return props.surahs.chapters.filter(surah =>
+        surah.name_simple.toLowerCase().includes(search.value.toLowerCase()) ||
+        surah.name_arabic.toLowerCase().includes(search.value.toLowerCase()) ||
+        surah.translated_name.name.toLowerCase().includes(search.value.toLowerCase())
+    );
 });
 
 const toggleTheme = () => {
@@ -102,191 +116,31 @@ onMounted(() => {
 <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
 <h3 class="text-2xl font-bold text-gray-800 dark:text-white w-full md:w-auto">Quran Surahs</h3>
 <div class="relative w-full md:w-72">
-<input class="w-full pl-4 pr-10 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-surface-dark text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow" placeholder="Search surah" type="text"/>
+<input v-model="search" class="w-full pl-4 pr-10 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-surface-dark text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow" placeholder="Search surah" type="text"/>
 <span class="material-symbols-outlined absolute right-3 top-2.5 text-gray-400 dark:text-gray-500 pointer-events-none">search</span>
 </div>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-border-light dark:border-border-dark flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
+<Link :href="route('quran.surah', { surah: surah.id })" v-for="surah in filteredSurahs" :key="surah.id" class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-border-light dark:border-border-dark flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
 <div class="flex items-center gap-4">
 <div class="relative flex items-center justify-center w-12 h-12">
 <svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
 <path d="M12 2L14.8 4.6L18.5 4.1L19.4 7.8L22.8 9.5L20.9 12.9L22.8 16.3L19.4 18L18.5 21.7L14.8 21.2L12 23.8L9.2 21.2L5.5 21.7L4.6 18L1.2 16.3L3.1 12.9L1.2 9.5L4.6 7.8L5.5 4.1L9.2 4.6L12 2Z"></path>
 </svg>
-<span class="absolute text-sm font-bold text-primary">1</span>
+<span class="absolute text-sm font-bold text-primary">{{ surah.id }}</span>
 </div>
 <div class="flex flex-col">
-<span class="font-semibold text-gray-800 dark:text-white text-base">Al-Fātiḥah</span>
+<span class="font-semibold text-gray-800 dark:text-white text-base">{{ surah.name_simple }}</span>
 <div class="flex items-center gap-1 mt-1">
 <span class="material-symbols-outlined text-[16px] text-gray-400">menu_book</span>
-<span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">7 Ayat</span>
+<span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">{{ surah.verses_count }} Ayat</span>
 </div>
 </div>
 </div>
 <div>
-<span class="font-serif text-xl font-bold text-gray-800 dark:text-gray-200">الفاتحة</span>
+<span class="font-serif text-xl font-bold text-gray-800 dark:text-gray-200">{{ surah.name_arabic }}</span>
 </div>
-</div>
-<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-border-light dark:border-border-dark flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
-<div class="flex items-center gap-4">
-<div class="relative flex items-center justify-center w-12 h-12">
-<svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-<path d="M12 2L14.8 4.6L18.5 4.1L19.4 7.8L22.8 9.5L20.9 12.9L22.8 16.3L19.4 18L18.5 21.7L14.8 21.2L12 23.8L9.2 21.2L5.5 21.7L4.6 18L1.2 16.3L3.1 12.9L1.2 9.5L4.6 7.8L5.5 4.1L9.2 4.6L12 2Z"></path>
-</svg>
-<span class="absolute text-sm font-bold text-primary">1</span>
-</div>
-<div class="flex flex-col">
-<span class="font-semibold text-gray-800 dark:text-white text-base">Al-Fātiḥah</span>
-<div class="flex items-center gap-1 mt-1">
-<span class="material-symbols-outlined text-[16px] text-gray-400">menu_book</span>
-<span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">7 Ayat</span>
-</div>
-</div>
-</div>
-<div>
-<span class="font-serif text-xl font-bold text-gray-800 dark:text-gray-200">الفاتحة</span>
-</div>
-</div>
-<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-border-light dark:border-border-dark flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
-<div class="flex items-center gap-4">
-<div class="relative flex items-center justify-center w-12 h-12">
-<svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-<path d="M12 2L14.8 4.6L18.5 4.1L19.4 7.8L22.8 9.5L20.9 12.9L22.8 16.3L19.4 18L18.5 21.7L14.8 21.2L12 23.8L9.2 21.2L5.5 21.7L4.6 18L1.2 16.3L3.1 12.9L1.2 9.5L4.6 7.8L5.5 4.1L9.2 4.6L12 2Z"></path>
-</svg>
-<span class="absolute text-sm font-bold text-primary">1</span>
-</div>
-<div class="flex flex-col">
-<span class="font-semibold text-gray-800 dark:text-white text-base">Al-Fātiḥah</span>
-<div class="flex items-center gap-1 mt-1">
-<span class="material-symbols-outlined text-[16px] text-gray-400">menu_book</span>
-<span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">7 Ayat</span>
-</div>
-</div>
-</div>
-<div>
-<span class="font-serif text-xl font-bold text-gray-800 dark:text-gray-200">الفاتحة</span>
-</div>
-</div>
-<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-border-light dark:border-border-dark flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
-<div class="flex items-center gap-4">
-<div class="relative flex items-center justify-center w-12 h-12">
-<svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-<path d="M12 2L14.8 4.6L18.5 4.1L19.4 7.8L22.8 9.5L20.9 12.9L22.8 16.3L19.4 18L18.5 21.7L14.8 21.2L12 23.8L9.2 21.2L5.5 21.7L4.6 18L1.2 16.3L3.1 12.9L1.2 9.5L4.6 7.8L5.5 4.1L9.2 4.6L12 2Z"></path>
-</svg>
-<span class="absolute text-sm font-bold text-primary">1</span>
-</div>
-<div class="flex flex-col">
-<span class="font-semibold text-gray-800 dark:text-white text-base">Al-Fātiḥah</span>
-<div class="flex items-center gap-1 mt-1">
-<span class="material-symbols-outlined text-[16px] text-gray-400">menu_book</span>
-<span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">7 Ayat</span>
-</div>
-</div>
-</div>
-<div>
-<span class="font-serif text-xl font-bold text-gray-800 dark:text-gray-200">الفاتحة</span>
-</div>
-</div>
-<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-border-light dark:border-border-dark flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
-<div class="flex items-center gap-4">
-<div class="relative flex items-center justify-center w-12 h-12">
-<svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-<path d="M12 2L14.8 4.6L18.5 4.1L19.4 7.8L22.8 9.5L20.9 12.9L22.8 16.3L19.4 18L18.5 21.7L14.8 21.2L12 23.8L9.2 21.2L5.5 21.7L4.6 18L1.2 16.3L3.1 12.9L1.2 9.5L4.6 7.8L5.5 4.1L9.2 4.6L12 2Z"></path>
-</svg>
-<span class="absolute text-sm font-bold text-primary">1</span>
-</div>
-<div class="flex flex-col">
-<span class="font-semibold text-gray-800 dark:text-white text-base">Al-Fātiḥah</span>
-<div class="flex items-center gap-1 mt-1">
-<span class="material-symbols-outlined text-[16px] text-gray-400">menu_book</span>
-<span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">7 Ayat</span>
-</div>
-</div>
-</div>
-<div>
-<span class="font-serif text-xl font-bold text-gray-800 dark:text-gray-200">الفاتحة</span>
-</div>
-</div>
-<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-border-light dark:border-border-dark flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
-<div class="flex items-center gap-4">
-<div class="relative flex items-center justify-center w-12 h-12">
-<svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-<path d="M12 2L14.8 4.6L18.5 4.1L19.4 7.8L22.8 9.5L20.9 12.9L22.8 16.3L19.4 18L18.5 21.7L14.8 21.2L12 23.8L9.2 21.2L5.5 21.7L4.6 18L1.2 16.3L3.1 12.9L1.2 9.5L4.6 7.8L5.5 4.1L9.2 4.6L12 2Z"></path>
-</svg>
-<span class="absolute text-sm font-bold text-primary">1</span>
-</div>
-<div class="flex flex-col">
-<span class="font-semibold text-gray-800 dark:text-white text-base">Al-Fātiḥah</span>
-<div class="flex items-center gap-1 mt-1">
-<span class="material-symbols-outlined text-[16px] text-gray-400">menu_book</span>
-<span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">7 Ayat</span>
-</div>
-</div>
-</div>
-<div>
-<span class="font-serif text-xl font-bold text-gray-800 dark:text-gray-200">الفاتحة</span>
-</div>
-</div>
-<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-border-light dark:border-border-dark flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
-<div class="flex items-center gap-4">
-<div class="relative flex items-center justify-center w-12 h-12">
-<svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-<path d="M12 2L14.8 4.6L18.5 4.1L19.4 7.8L22.8 9.5L20.9 12.9L22.8 16.3L19.4 18L18.5 21.7L14.8 21.2L12 23.8L9.2 21.2L5.5 21.7L4.6 18L1.2 16.3L3.1 12.9L1.2 9.5L4.6 7.8L5.5 4.1L9.2 4.6L12 2Z"></path>
-</svg>
-<span class="absolute text-sm font-bold text-primary">1</span>
-</div>
-<div class="flex flex-col">
-<span class="font-semibold text-gray-800 dark:text-white text-base">Al-Fātiḥah</span>
-<div class="flex items-center gap-1 mt-1">
-<span class="material-symbols-outlined text-[16px] text-gray-400">menu_book</span>
-<span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">7 Ayat</span>
-</div>
-</div>
-</div>
-<div>
-<span class="font-serif text-xl font-bold text-gray-800 dark:text-gray-200">الفاتحة</span>
-</div>
-</div>
-<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-border-light dark:border-border-dark flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
-<div class="flex items-center gap-4">
-<div class="relative flex items-center justify-center w-12 h-12">
-<svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-<path d="M12 2L14.8 4.6L18.5 4.1L19.4 7.8L22.8 9.5L20.9 12.9L22.8 16.3L19.4 18L18.5 21.7L14.8 21.2L12 23.8L9.2 21.2L5.5 21.7L4.6 18L1.2 16.3L3.1 12.9L1.2 9.5L4.6 7.8L5.5 4.1L9.2 4.6L12 2Z"></path>
-</svg>
-<span class="absolute text-sm font-bold text-primary">1</span>
-</div>
-<div class="flex flex-col">
-<span class="font-semibold text-gray-800 dark:text-white text-base">Al-Fātiḥah</span>
-<div class="flex items-center gap-1 mt-1">
-<span class="material-symbols-outlined text-[16px] text-gray-400">menu_book</span>
-<span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">7 Ayat</span>
-</div>
-</div>
-</div>
-<div>
-<span class="font-serif text-xl font-bold text-gray-800 dark:text-gray-200">الفاتحة</span>
-</div>
-</div>
-<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-border-light dark:border-border-dark flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
-<div class="flex items-center gap-4">
-<div class="relative flex items-center justify-center w-12 h-12">
-<svg class="w-12 h-12 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-<path d="M12 2L14.8 4.6L18.5 4.1L19.4 7.8L22.8 9.5L20.9 12.9L22.8 16.3L19.4 18L18.5 21.7L14.8 21.2L12 23.8L9.2 21.2L5.5 21.7L4.6 18L1.2 16.3L3.1 12.9L1.2 9.5L4.6 7.8L5.5 4.1L9.2 4.6L12 2Z"></path>
-</svg>
-<span class="absolute text-sm font-bold text-primary">1</span>
-</div>
-<div class="flex flex-col">
-<span class="font-semibold text-gray-800 dark:text-white text-base">Al-Fātiḥah</span>
-<div class="flex items-center gap-1 mt-1">
-<span class="material-symbols-outlined text-[16px] text-gray-400">menu_book</span>
-<span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">7 Ayat</span>
-</div>
-</div>
-</div>
-<div>
-<span class="font-serif text-xl font-bold text-gray-800 dark:text-gray-200">الفاتحة</span>
-</div>
-</div>
+</Link>
 </div>
 <div class="flex justify-between items-center mt-auto pb-4">
 <button class="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-primary hover:text-white dark:hover:bg-primary dark:hover:text-white transition-colors">

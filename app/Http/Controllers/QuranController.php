@@ -7,14 +7,23 @@ use Inertia\Inertia;
 
 class QuranController extends Controller
 {
-    public function surahs()
+    public function surahs(QuranApiService $quran)
     {
-        return Inertia::render('Quran/Surahs');
+        return Inertia::render('Quran/Surahs', [
+            'surahs' => $quran->getChapters(),
+        ]);
     }
-    public function showSurah(QuranApiService $quran, int $surah)
+    public function showSurah(QuranApiService $quran, int $surah, int $page = 1)
     {
-        return Inertia::render('Quran/Surah', [
-            'surah' => $quran->getSurah($surah),
+        $chapters = $quran->getChapters();
+        $currentSurah = collect($chapters['chapters'])->firstWhere('id', $surah);
+        $perPage = 4;
+        $startAyah = ($page - 1) * $perPage + 1;
+        return Inertia::render('Quran/Page', [
+            'surah_details' => $currentSurah,
+            'verses' => $quran->getMultipleAyahs($surah, $startAyah, $perPage),
+            'currentPage' => (int)$page,
+            'totalPages' => ceil($currentSurah['verses_count'] / $perPage),
         ]);
     }
 

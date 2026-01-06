@@ -4,20 +4,115 @@ namespace App\Http\Controllers;
 
 use App\Events\QuranVerseChanged;
 use App\Models\LiveSession;
+use App\Models\SessionParticipant;
 use Illuminate\Http\Request;
+use App\Models\User;
+use App\Enums\UserRole;
+use App\Services\QuranApiService;
 
 class TeacherController extends Controller
 {
-    public function prepare_class(){
-        return inertia('Teacher/Prepare_class');
+    public function index()
+    {
+        $teacher = auth()->user();
+
+        // Get all unique students who have participated in the teacher's sessions.
+        $studentIds = SessionParticipant::whereIn('live_session_id', function ($query) use ($teacher) {
+            $query->select('id')->from('live_sessions')->where('teacher_id', $teacher->id);
+        })->distinct()->pluck('user_id');
+
+        $students = User::whereIn('id', $studentIds)->get()->map(function ($student) {
+            $last_activity = \DB::table('sessions')->where('user_id', $student->id)->max('last_activity');
+            $student->online = $last_activity ? (time() - $last_activity) < 300 : false;
+            // Mocking progress
+            $student->progress = rand(10, 90);
+            $student->surahs_completed = floor(114 * ($student->progress / 100));
+            return $student;
+        });
+
+        // Quick Stats
+        $totalStudents = $students->count();
+        $classesThisWeek = LiveSession::where('teacher_id', $teacher->id)
+            ->where('created_at', '>=', now()->subWeek())
+            ->count();
+
+        // Recent Activities (last 3 ended sessions)
+        $recentActivities = LiveSession::where('teacher_id', $teacher->id)
+            ->where('status', 'ended')
+            ->latest()
+            ->take(3)
+            ->get();
+
+        // Upcoming Classes (scheduled sessions)
+        $upcomingClasses = LiveSession::where('teacher_id', $teacher->id)
+            ->where('status', 'scheduled')
+            ->orderBy('created_at')
+            ->get();
+
+        return inertia('Teacher/Index', [
+            'students' => $students,
+            'totalStudents' => $totalStudents,
+            'classesThisWeek' => $classesThisWeek,
+            'recentActivities' => $recentActivities,
+            'upcomingClasses' => $upcomingClasses,
+        ]);
+    }
+
+    public function prepare_class(QuranApiService $quran)
+    {
+        $teacher = auth()->user();
+        $studentIds = SessionParticipant::whereIn('live_session_id', function ($query) use ($teacher) {
+            $query->select('id')->from('live_sessions')->where('teacher_id', $teacher->id);
+        })->distinct()->pluck('user_id');
+        $students = User::whereIn('id', $studentIds)->get();
+        $surahs = $quran->getChapters();
+
+        return inertia('Teacher/Prepare_class', [
+            'students' => $students,
+            'surahs' => $surahs['chapters'],
+        ]);
     }
 
     public function announcement(){
         return inertia('Teacher/Announcement');
     }
 
+    public function schedule(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'students' => 'required|array',
+            'date' => 'required|date',
+            'time' => 'required',
+        ]);
+
+        $started_at = $request->date . ' ' . $request->time;
+
+        $liveSession = LiveSession::create([
+            'teacher_id' => auth()->id(),
+            'title' => $request->title,
+            'session_name' => 'session-' . time(),
+            'status' => 'scheduled',
+            'started_at' => $started_at,
+        ]);
+
+        foreach ($request->students as $studentId) {
+            SessionParticipant::create([
+                'live_session_id' => $liveSession->id,
+                'user_id' => $studentId,
+            ]);
+        }
+
+        return redirect()->route('teacher.index')->with('success', 'Class scheduled successfully.');
+    }
+
     public function start(Request $request)
     {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'students' => 'required|array',
+        ]);
+
         // Find an existing live session for the teacher or create a new one
         $liveSession = LiveSession::firstOrCreate(
             ['teacher_id' => auth()->id(), 'status' => 'live'],
@@ -27,6 +122,13 @@ class TeacherController extends Controller
                 'started_at' => now(),
             ]
         );
+
+        foreach ($request->students as $studentId) {
+            SessionParticipant::create([
+                'live_session_id' => $liveSession->id,
+                'user_id' => $studentId,
+            ]);
+        }
 
         return response()->json([
             'success' => true,
@@ -110,6 +212,19 @@ class TeacherController extends Controller
         $joinRequest->update(['status' => 'declined']);
 
         return response()->json(['success' => true]);
+    }
+
+
+    public function history()
+    {
+        $sessions = LiveSession::where('status', 'ended')
+            ->with('teacher', 'students')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return inertia('Teacher/History', [
+            'sessions' => $sessions,
+        ]);
     }
 
     public function getLiveSessions(){

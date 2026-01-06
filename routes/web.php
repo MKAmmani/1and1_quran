@@ -24,9 +24,13 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get('/teacher/dashboard', function () {
-    return Inertia::render('Teacher/Index');
-})->middleware(['auth', 'verified', 'role:' . UserRole::Teacher->value])->name('teacher.index');
+Route::get('/class/history', [TeacherController::class, 'history'])
+    ->middleware(['auth', 'verified', 'role:' . UserRole::Teacher->value])
+    ->name('teacher.history');
+
+
+
+Route::get('/teacher/dashboard', [TeacherController::class, 'index'])->middleware(['auth', 'verified', 'role:' . UserRole::Teacher->value])->name('teacher.index');
 
 Route::post('/video-sdk/token', [VideoSDKTokenController::class, 'generate'])
     ->middleware('auth');
@@ -56,6 +60,7 @@ Route::middleware(['auth', 'verified', 'role:' . UserRole::Teacher->value])->gro
     Route::get('/Announcement',[TeacherController::class, 'announcement'])->name('announcement');
     Route::get('/live-class', [TeacherController::class,'live'])->name('live');
     Route::post('/live-class/start', [TeacherController::class, 'start'])->name('live-class.start');
+    Route::post('/class/schedule', [TeacherController::class, 'schedule'])->name('class.schedule');
     Route::get('/live-sessions/{liveSession}/join-requests', [TeacherController::class, 'getJoinRequests'])->name('live-sessions.join-requests');
     Route::post('/join-requests/{joinRequest}/approve', [TeacherController::class, 'approveJoinRequest'])->name('join-requests.approve');
     Route::post('/join-requests/{joinRequest}/decline', [TeacherController::class, 'declineJoinRequest'])->name('join-requests.decline');
@@ -66,7 +71,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/quran/surah/{surah}', [QuranController::class, 'showSurah']);
+    Route::get('/quran/surah/{surah}/{page?}', [QuranController::class, 'showSurah'])->name('quran.surah');
     Route::get('/quran/ayah/{surah}/{ayah}', [QuranController::class, 'getAyah']);
     Route::get('/quran/ayahs/{surah}/{startAyah}/{count?}', [QuranController::class, 'getMultipleAyahs']);
     Route::get('/quran/surahs', [QuranController::class, 'surahs']);

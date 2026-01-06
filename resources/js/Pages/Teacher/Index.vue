@@ -1,10 +1,10 @@
 <template>
-    <body class="bg-gray-50 text-gray-800 min-h-screen">
-        <!-- Desktop Layout -->
+<!--<body class="bg-gray-50 text-gray-800 min-h-screen">
+        <!-- Desktop Layout 
         <div class="hidden lg:flex min-h-screen">
-            <!-- Sidebar -->
+            <!-- Sidebar 
             <aside class="w-64 bg-white shadow-lg flex flex-col">
-                <!-- Logo -->
+                <!-- Logo 
                 <div class="px-8 pt-8 pb-4">
                     <img
                         src="/images/app_logo.jpg"
@@ -13,7 +13,7 @@
                     />
                 </div>
 
-                <!-- Navigation -->
+                <!-- Navigation 
                 <nav class="flex-1 px-6 pt-2 pb-6 flex flex-col">
                     <div class="space-y-2">
                         <Link
@@ -193,9 +193,9 @@
                 </nav>
             </aside>
 
-            <!-- Main Content -->
+            <!-- Main Content --
             <main class="flex-1 p-10">
-                <!-- Header -->
+                <!-- Header --
                 <header class="flex justify-between items-center mb-10">
                     <div>
                         <h1 class="text-2xl font-semibold">
@@ -235,7 +235,7 @@
                     </div>
                 </header>
 
-                <!-- Today's Session -->
+                <!-- Today's Session --
                 <section class="bg-white rounded-2xl shadow-sm p-8 mb-8">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold">Today's Session</h2>
@@ -250,7 +250,7 @@
                     <h3 class="text-xl font-semibold mb-6">My students</h3>
 
                     <div class="space-y-4">
-                        <!-- Student Row 1 -->
+                        <!-- Student Row 1 --
                         <div class="grid grid-cols-12 gap-2 items-center">
                             <div class="col-span-3">
                                 <p class="font-medium text-lg">Salmah</p>
@@ -289,7 +289,7 @@
                             </div>
                         </div>
 
-                        <!-- Student Row 2 -->
+                        <!-- Student Row 2 --
                         <div class="grid grid-cols-12 gap-2 items-center">
                             <div class="col-span-3">
                                 <p class="font-medium text-lg">Ali</p>
@@ -328,7 +328,7 @@
                             </div>
                         </div>
 
-                        <!-- Student Row 3 -->
+                        <!-- Student Row 3 --
                         <div class="grid grid-cols-12 gap-2 items-center">
                             <div class="col-span-3">
                                 <p class="font-medium text-lg">Rashad</p>
@@ -369,7 +369,7 @@
                     </div>
                 </section>
 
-                <!-- Quick Stats -->
+                <!-- Quick Stats --
                 <section class="mb-8">
                     <h2 class="text-2xl font-bold mb-6">Quick stats</h2>
                     <div class="grid grid-cols-3 gap-6">
@@ -388,7 +388,7 @@
                     </div>
                 </section>
 
-                <!-- Recent Activities & Upcoming Classes -->
+                <!-- Recent Activities & Upcoming Classes --
                 <div class="grid grid-cols-2 gap-8">
                     <section class="bg-white rounded-2xl shadow-sm p-8">
                         <h2 class="text-2xl font-bold mb-6">
@@ -462,9 +462,9 @@
             </main>
         </div>
 
-        <!-- Mobile Layout -->
+        <!-- Mobile Layout --
         <div class="lg:hidden flex flex-col min-h-screen">
-            <!-- Mobile Header with Hamburger on left -->
+            <!-- Mobile Header with Hamburger on left --
             <div
                 class="bg-white shadow-md px-4 py-3 flex items-center"
             >
@@ -493,12 +493,12 @@
                 />
             </div>
 
-            <!-- Sidebar (Hidden by default) - Slide in from left -->
+            <!-- Sidebar (Hidden by default) - Slide in from left --
             <aside
                 id="mobileNav"
                 class="hidden fixed top-0 left-0 h-full w-64 bg-white shadow-lg flex-col z-50 transform -translate-x-full transition-transform duration-300 ease-in-out"
             >
-                <!-- Navigation -->
+                <!-- Navigation --
                 <nav class="px-4 pt-2 pb-4 flex flex-col">
                     <div class="space-y-2">
                         <Link
@@ -673,9 +673,9 @@
                 </nav>
             </aside>
 
-            <!-- Main Content -->
+            <!-- Main Content --
             <main class="flex-1 p-4">
-                <!-- Header -->
+                <!-- Header --
                 <header class="flex flex-col gap-4 mb-6">
                     <div>
                         <h1 class="text-lg font-semibold">
@@ -715,7 +715,7 @@
                     </div>
                 </header>
 
-                <!-- Today's Session -->
+                <!-- Today's Session --
                 <section class="bg-white rounded-2xl shadow-sm p-4 mb-6">
                     <div class="flex flex-col gap-4 mb-4">
                         <h2 class="text-lg font-bold">Today's Session</h2>
@@ -730,7 +730,7 @@
                     <h3 class="text-base font-semibold mb-4">My students</h3>
 
                     <div class="space-y-4">
-                        <!-- Student Row 1 -->
+                        <!-- Student Row 1 --
                         <div class="space-y-2">
                             <div class="flex justify-between items-center">
                                 <div>
@@ -763,7 +763,7 @@
                             <p class="text-xs text-gray-600">11% completed</p>
                         </div>
 
-                        <!-- Student Row 2 -->
+                        <!-- Student Row 2 --
                         <div class="space-y-2">
                             <div class="flex justify-between items-center">
                                 <div>
@@ -796,7 +796,7 @@
                             <p class="text-xs text-gray-600">21% completed</p>
                         </div>
 
-                        <!-- Student Row 3 -->
+                        <!-- Student Row 3 --
                         <div class="space-y-2">
                             <div class="flex justify-between items-center">
                                 <div>
@@ -831,7 +831,7 @@
                     </div>
                 </section>
 
-                <!-- Quick Stats -->
+                <!-- Quick Stats --
                 <section class="mb-6">
                     <h2 class="text-lg font-bold mb-4">Quick stats</h2>
                     <div class="grid grid-cols-3 gap-3">
@@ -852,7 +852,7 @@
                     </div>
                 </section>
 
-                <!-- Recent Activities & Upcoming Classes -->
+                <!-- Recent Activities & Upcoming Classes --
                 <div class="space-y-6">
                     <section class="bg-white rounded-2xl shadow-sm p-4">
                         <h2 class="text-lg font-bold mb-4">
@@ -927,13 +927,213 @@
                 </div>
             </main>
         </div>
-    </body>
+    </body> -->
+
+<body class="bg-background-light dark:bg-background-dark font-sans text-text-primary-light dark:text-text-primary-dark antialiased h-screen overflow-hidden flex flex-col md:flex-row transition-colors duration-200">
+    <!-- Mobile Header with Hamburger Menu -->
+    <header class="md:hidden h-16 px-4 flex items-center justify-between flex-shrink-0 bg-background-light dark:bg-background-dark border-b border-border-light dark:border-border-dark z-20">
+        <button @click="sidebarOpen = true" class="p-2 rounded-lg text-text-primary-light dark:text-text-primary-dark">
+            <span class="material-icons-outlined">menu</span>
+        </button>
+        <!--App logo-->
+        <img src="/images/app_logo.jpg" alt="App Logo" class="h-24 w-auto">
+        <div class="w-10"></div> <!-- Spacer for alignment -->
+    </header>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div v-if="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 md:hidden"></div>
+
+    <div class="flex h-screen overflow-hidden">
+        <aside :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}" class="fixed md:static md:translate-x-0 top-0 left-0 h-full w-64 bg-surface-light dark:bg-surface-dark border-r border-gray-200 dark:border-gray-800 flex-shrink-0 flex flex-col z-40 md:z-auto transition-all duration-300 ease-in-out overflow-y-auto">
+            <div class="p-6 flex justify-center items-center">
+                <div class="relative flex items-center justify-center w-[186px] h-[122px]">
+                    <img alt="1-on-1 Quran Classes Logo" class="object-contain h-24 w-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2GccdOXd8F0wAWHy8VMgqTjnmXj_L8491ObQTH3eTW2AkpvSMmNonjVejGPzDMaRasIU2Ne7rn6u0yYFq19RoVzrR6iZCI57eyPYmH71NZ8tNRXkdBrjj-o3nI9C6zeqdPVAfWY--g4HZZ3YUVsR4pIMxgRoS2pMB_SR3yHFjbATSOcUhgqzGsAhfttLbd0tn-p5aCTEm-p-_ma6r3raniZZhBIG6XNwxDRHrREizRcdk7cy5vl25lqx2rKNwxC-3BX5zEltVys4" />
+                </div>
+            </div>
+            <nav class="flex-1 px-4 space-y-2 mt-4">
+                <a class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-lg transition-colors shadow-md" href="#">
+                    <span class="material-icons-outlined">home</span>
+                    <span class="font-medium">Home</span>
+                </a>
+                <a class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group" href="#">
+                    <span class="material-icons-outlined group-hover:text-primary transition-colors">menu_book</span>
+                    <span class="font-medium group-hover:text-primary transition-colors">Prepare</span>
+                </a>
+                <a class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group" href="#">
+                    <span class="material-icons-outlined group-hover:text-primary transition-colors">playlist_add_check</span>
+                    <span class="font-medium group-hover:text-primary transition-colors">Students</span>
+                </a>
+                <a class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group" href="#">
+                    <span class="material-icons-outlined group-hover:text-primary transition-colors">live_tv</span>
+                    <span class="font-medium group-hover:text-primary transition-colors">Live class</span>
+                </a>
+                <a class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group" href="#">
+                    <span class="material-icons-outlined group-hover:text-primary transition-colors">auto_stories</span>
+                    <span class="font-medium group-hover:text-primary transition-colors">Quran library</span>
+                </a>
+                <a class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group" href="#">
+                    <span class="material-icons-outlined group-hover:text-primary transition-colors">history_edu</span>
+                    <span class="font-medium group-hover:text-primary transition-colors">Class history</span>
+                </a>
+            </nav>
+            <div class="p-4 mt-auto border-t border-gray-100 dark:border-gray-800 space-y-2">
+                <a class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group" href="#">
+                    <span class="material-icons-outlined group-hover:text-primary transition-colors">settings</span>
+                    <span class="font-medium group-hover:text-primary transition-colors">Settings</span>
+                </a>
+                <button @click="logout" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group">
+                    <span class="material-icons-outlined group-hover:text-primary transition-colors">logout</span>
+                    <span class="font-medium group-hover:text-primary transition-colors">Logout</span>
+                </button>
+            </div>
+        </aside>
+        <main class="flex-1 overflow-y-auto h-full p-6 lg:p-10">
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+                <div>
+                    <h1 class="text-2xl font-display font-semibold text-gray-800 dark:text-white">Assalaikum Alaykum, {{ $page.props.auth.user.first_name }}</h1>
+                </div>
+                <div class="flex items-center gap-6">
+                    <span class="text-sm text-text-secondary-light dark:text-text-secondary-dark hidden sm:block">{{ currentDate }}</span>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                            <span class="material-icons-outlined text-gray-500 dark:text-gray-400">person</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-sm font-semibold text-gray-800 dark:text-white">{{ $page.props.auth.user.first_name }} {{ $page.props.auth.user.last_name }}</span>
+                            <span class="text-xs text-text-secondary-light dark:text-text-secondary-dark">{{ $page.props.auth.user.email }}</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <section class="mb-10">
+                <h2 class="text-2xl font-display font-semibold text-gray-800 dark:text-white mb-6">Today's Session</h2>
+                <div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-medium text-gray-800 dark:text-white">My students</h3>
+                        <button @click="startLiveSession" class="bg-primary hover:bg-primary-dark text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+                            Start class
+                        </button>
+                    </div>
+                    <div class="space-y-6">
+                        <div v-for="student in students" :key="student.id" class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-gray-50 dark:border-gray-700/50 last:border-0 last:pb-0">
+                            <div class="w-full md:w-1/4">
+                                <span class="font-medium text-gray-800 dark:text-gray-200">{{ student.first_name }} {{ student.last_name }}</span>
+                            </div>
+                            <div class="w-full md:w-1/2 flex flex-col gap-1">
+                                <div class="flex justify-between text-xs text-text-secondary-light dark:text-text-secondary-dark mb-1">
+                                    <span>{{ student.surahs_completed }} of 114 surahs</span>
+                                    <span class="font-medium text-gray-700 dark:text-gray-300">{{ student.progress }}% completed</span>
+                                </div>
+                                <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full" :style="{ width: student.progress + '%' }"></div>
+                                </div>
+                            </div>
+                            <div class="w-full md:w-1/4 flex justify-between md:justify-end items-center gap-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full" :class="{'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]': student.online, 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]': !student.online}"></span>
+                                    <span class="text-xs text-text-secondary-light dark:text-text-secondary-dark">{{ student.online ? 'Online' : 'Offline' }}</span>
+                                </div>
+                                <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                    <span class="material-icons-outlined text-lg">more_vert</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section class="mb-10">
+                <h2 class="text-2xl font-display font-semibold text-gray-800 dark:text-white mb-6">Quick stats</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-4">
+                        <span class="text-5xl font-bold text-primary">{{ totalStudents }}</span>
+                        <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Total students</span>
+                    </div>
+                    <div class="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-4">
+                        <span class="text-5xl font-bold text-primary">{{ classesThisWeek }}</span>
+                        <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Classes this<br />week</span>
+                    </div>
+                    <div class="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-4">
+                        <span class="text-5xl font-bold text-primary">2</span>
+                        <span class="text-sm font-medium text-gray-600 dark:text-gray-300">This week</span>
+                    </div>
+                </div>
+            </section>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+                <div class="lg:col-span-2">
+                    <h2 class="text-2xl font-display font-semibold text-gray-800 dark:text-white mb-6">Recent Activities</h2>
+                    <div class="space-y-4">
+                        <p class="text-sm text-text-secondary-light dark:text-text-secondary-dark mb-2">Today</p>
+                        <div v-for="activity in recentActivities" :key="activity.id" class="bg-gray-50 dark:bg-gray-800/50 border-l-4 border-primary rounded-r-lg p-4 transition-colors">
+                            <p class="text-sm text-gray-700 dark:text-gray-300">
+                                Class "{{ activity.title }}" completed.
+                            </p>
+                        </div>
+                        <div v-if="recentActivities.length === 0" class="text-sm text-gray-500">
+                            No recent activities.
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-display font-semibold text-gray-800 dark:text-white mb-6">Upcoming Classes</h2>
+                    <div class="space-y-3">
+                        <div v-if="upcomingClasses.length > 0">
+                            <div v-for="upcoming in upcomingClasses" :key="upcoming.id" class="bg-surface-light dark:bg-surface-dark border border-gray-100 dark:border-gray-800 rounded-xl p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
+                                <div class="flex-shrink-0 text-gray-800 dark:text-white">
+                                    <span class="material-icons-outlined">play_circle_filled</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ upcoming.title }}</h4>
+                                    <p class="text-xs text-text-secondary-light dark:text-text-secondary-dark">{{ new Date(upcoming.created_at).toLocaleDateString() }}</p>
+                                </div>
+                                <button class="bg-primary hover:bg-primary-dark text-white text-xs px-2 py-1 rounded transition-colors">Start</button>
+                            </div>
+                        </div>
+                        <div v-else>
+                            <p class="text-sm text-gray-500">No upcoming classes.</p>
+                            <Link :href="route('prepre_class')" class="text-primary hover:underline">Schedule a class</Link>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+</body>
 </template>
 
 <script setup>
-import { onMounted } from "vue";
-import { router, Link } from "@inertiajs/vue3";
+import {
+    onMounted,
+    computed,
+    onBeforeUnmount,
+    ref
+} from "vue";
+import {
+    router,
+    Link,
+    usePage
+} from "@inertiajs/vue3";
 import axios from 'axios';
+
+const props = defineProps({
+    students: Array,
+    totalStudents: Number,
+    classesThisWeek: Number,
+    recentActivities: Array,
+    upcomingClasses: Array,
+});
+
+const page = usePage();
+const sidebarOpen = ref(false);
+
+const currentDate = computed(() => {
+    return new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
+});
 
 const logout = () => {
     router.post(route("logout"));
@@ -965,45 +1165,29 @@ const isCurrentRoute = (routeName) => {
 
 // Close mobile menu function
 const closeMobileMenu = () => {
-    const mobileNav = document.getElementById("mobileNav");
-    if (mobileNav && !mobileNav.classList.contains("-translate-x-full") && !mobileNav.classList.contains("hidden")) {
-        mobileNav.classList.add("-translate-x-full");
-        // Hide after animation completes
-        setTimeout(() => {
-            mobileNav.classList.add("hidden");
-        }, 300);
-    }
+    sidebarOpen.value = false;
+};
+
+const handleResize = () => {
+    sidebarOpen.value = window.innerWidth >= 768;
 };
 
 onMounted(() => {
-    // Mobile menu toggle
-    const menuToggle = document.getElementById("menuToggle");
-    const mobileNav = document.getElementById("mobileNav");
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    if (window.Echo) {
+        const channelName = `teacher.${page.props.auth.user.id}`;
+        console.log(`Listening on channel: ${channelName}`);
 
-    menuToggle.addEventListener("click", function () {
-        mobileNav.classList.remove("hidden");
-        // Trigger the slide-in animation
-        setTimeout(() => {
-            mobileNav.classList.remove("-translate-x-full");
-        }, 10);
-    });
+        window.Echo.private(channelName)
+            .listen('.join.request.sent', (e) => {
+                console.log('Join request sent event received:', e);
+                // Optionally show a notification
+            });
+    }
+});
 
-    // Close menu when clicking a link
-    const navLinks = mobileNav.querySelectorAll("a");
-    navLinks.forEach((link) => {
-        link.addEventListener("click", function () {
-            closeMobileMenu();
-        });
-    });
-
-    // Close menu when clicking outside
-    document.addEventListener("click", function (event) {
-        const isClickInside =
-            mobileNav.contains(event.target) ||
-            menuToggle.contains(event.target);
-        if (!isClickInside && !mobileNav.classList.contains("-translate-x-full") && !mobileNav.classList.contains("hidden")) {
-            closeMobileMenu();
-        }
-    });
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', handleResize);
 });
 </script>
