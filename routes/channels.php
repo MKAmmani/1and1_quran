@@ -36,3 +36,10 @@ Broadcast::channel('teacher.{teacherId}', function ($user, $teacherId) {
 Broadcast::channel('student.{studentId}', function ($user, $studentId) {
     return (int) $user->id === (int) $studentId;
 });
+
+if (config('broadcasting.default')) {
+    Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
+        return (int) $user->id === (int) $id;
+    });
+}
+
