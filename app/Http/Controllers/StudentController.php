@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\Announcement;
 
 class StudentController extends Controller
 {
@@ -23,8 +24,35 @@ class StudentController extends Controller
             ->with('teacher')
             ->get();
 
+        $announcements = Announcement::join('announcement_recipients', 'announcements.id', '=', 'announcement_recipients.announcement_id')
+            ->where('announcement_recipients.student_id', auth()->id())
+            ->latest('announcements.created_at')
+            ->get();
+
+        // Recent Activities for the student
+        $recentActivities = LiveSession::whereHas('participants', function ($query) {
+            $query->where('user_id', auth()->id());
+        })
+        ->where('status', 'ended')
+        ->latest()
+        ->with('teacher') // Eager load teacher for display
+        ->take(3)
+        ->get();
+
+        // Upcoming Classes for the student
+        $upcomingClasses = LiveSession::whereHas('participants', function ($query) {
+            $query->where('user_id', auth()->id());
+        })
+        ->where('status', 'scheduled')
+        ->orderBy('started_at')
+        ->with('teacher') // Eager load teacher for display
+        ->get();
+
         return Inertia::render('Student/Index', [
             'liveSessions' => $liveSessions,
+            'announcements' => $announcements,
+            'recentActivities' => $recentActivities,
+            'upcomingClasses' => $upcomingClasses,
         ]);
     }
 

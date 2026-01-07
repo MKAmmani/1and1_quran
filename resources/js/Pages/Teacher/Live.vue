@@ -20,6 +20,7 @@ const props = defineProps({
 
 /* ---------------- TEMPLATE STATE ---------------- */
 const videoContainer = ref(null)
+const sidebarOpen = ref(false)
 
 const participants = ref([])
 const joinRequests = ref([])
@@ -271,10 +272,17 @@ const endSession = async () => {
   }
 }
 
+const handleResize = () => {
+    sidebarOpen.value = window.innerWidth >= 1024; // lg breakpoint is 1024px
+};
+
 /* ---------------- ZOOM LIFECYCLE ---------------- */
 onMounted(async () => {
   // Always fetch surahs regardless of session state
   await fetchSurahs();
+
+  handleResize();
+  window.addEventListener('resize', handleResize);
 
   await nextTick()
   if (!props.sessionName || !props.userName) return
@@ -457,6 +465,7 @@ onMounted(async () => {
 
 /* ---------------- CLEANUP ---------------- */
 onUnmounted(async () => {
+  window.removeEventListener('resize', handleResize);
   if (!zoomReady) return
   try {
     participants.value.forEach(u => mediaStream?.detachVideo(u.userId))
@@ -485,8 +494,12 @@ onUnmounted(async () => {
 
     <body
         class="bg-background-light dark:bg-background-dark font-display text-text-primary-light dark:text-text-primary-dark antialiased h-screen overflow-hidden flex transition-colors duration-200">
+        
+        <!-- Mobile Sidebar Overlay -->
+        <div v-if="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
+
         <aside
-            class="w-64 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex-shrink-0 flex flex-col h-full overflow-y-auto hidden lg:flex">
+            :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}" class="fixed lg:static lg:translate-x-0 top-0 left-0 h-full w-64 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex-shrink-0 flex flex-col overflow-y-auto z-40 transition-transform duration-300 ease-in-out">
             <div class="p-6 flex items-center justify-center">
                 <img alt="Quran Classes Logo" class="rounded-full w-14 h-14 object-cover" src="/images/app_logo.jpg" />
             </div>
@@ -538,9 +551,14 @@ onUnmounted(async () => {
         <main class="flex-1 flex flex-col h-full overflow-hidden relative">
             <header
                 class="h-20 flex items-center justify-between px-8 bg-background-light dark:bg-background-dark shrink-0">
-                <div class="flex flex-col">
-                    <h2 class="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark">Assalaikum
-                        Alaykum, {{ userName }}</h2>
+                <div class="flex items-center gap-4">
+                    <button @click="sidebarOpen = true" class="lg:hidden p-2 rounded-lg text-text-light dark:text-text-dark">
+                        <span class="material-icons">menu</span>
+                    </button>
+                    <div class="flex flex-col">
+                        <h2 class="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark">Assalaikum
+                            Alaykum, {{ userName }}</h2>
+                    </div>
                 </div>
                 <div class="flex items-center gap-6">
                     <div class="flex flex-col items-end">

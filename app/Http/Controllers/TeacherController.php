@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Enums\UserRole;
 use App\Services\QuranApiService;
+use App\Models\Announcement;
+use App\Models\AnnouncementRecipient;
 
 class TeacherController extends Controller
 {
@@ -73,8 +75,40 @@ class TeacherController extends Controller
         ]);
     }
 
-    public function announcement(){
-        return inertia('Teacher/Announcement');
+    public function announcement()
+    {
+        $teacher = auth()->user();
+        $studentIds = SessionParticipant::whereIn('live_session_id', function ($query) use ($teacher) {
+            $query->select('id')->from('live_sessions')->where('teacher_id', $teacher->id);
+        })->distinct()->pluck('user_id');
+        $students = User::whereIn('id', $studentIds)->get();
+
+        return inertia('Teacher/Announcement', [
+            'students' => $students,
+        ]);
+    }
+
+    public function students()
+    {
+        $teacher = auth()->user();
+
+        // Get all unique students who have participated in the teacher's sessions.
+        $studentIds = SessionParticipant::whereIn('live_session_id', function ($query) use ($teacher) {
+            $query->select('id')->from('live_sessions')->where('teacher_id', $teacher->id);
+        })->distinct()->pluck('user_id');
+
+        $students = User::whereIn('id', $studentIds)->get()->map(function ($student) {
+            $last_activity = \DB::table('sessions')->where('user_id', $student->id)->max('last_activity');
+            $student->online = $last_activity ? (time() - $last_activity) < 300 : false;
+            // Mocking progress
+            $student->progress = rand(10, 90);
+            $student->surahs_completed = floor(114 * ($student->progress / 100));
+            return $student;
+        });
+
+        return inertia('Teacher/Student', [
+            'students' => $students,
+        ]);
     }
 
     public function schedule(Request $request)
@@ -105,11 +139,33 @@ class TeacherController extends Controller
 
         return redirect()->route('teacher.index')->with('success', 'Class scheduled successfully.');
     }
+    
+    public function sendAnnouncement(Request $request)
+    {
+        $request->validate([
+            'message' => 'required|string',
+            'students' => 'required|array',
+        ]);
+
+        $announcement = Announcement::create([
+            'teacher_id' => auth()->id(),
+            'message' => $request->message,
+        ]);
+
+        foreach ($request->students as $studentId) {
+            AnnouncementRecipient::create([
+                'announcement_id' => $announcement->id,
+                'student_id' => $studentId,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Announcement sent successfully.');
+    }
 
     public function start(Request $request)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
             'students' => 'required|array',
         ]);
 

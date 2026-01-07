@@ -14,6 +14,9 @@ import {
 const props = defineProps({
     liveSessions: Array,
     flash: Object,
+    announcements: Array,
+    recentActivities: Array,
+    upcomingClasses: Array,
 });
 
 const sidebarOpen = ref(false);
@@ -143,62 +146,29 @@ onBeforeUnmount(() => {
             <section class="mb-10">
                 <h2 class="text-xl font-bold text-text-light dark:text-text-dark mb-6">Upcoming Classes</h2>
                 <div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800">
-                    <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                        <div class="flex items-center gap-4">
-                            <img alt="Instructor" class="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5svJqTdWPDVpCEH911hjuRdmx3fS-486TqGGVYRZEN06PZKG5med30gD-Su72NlylypLm8de_1C7O1hvqwu0JijYWoaeFBjvdyDEov7SeWtabHqPhU2ZyyhjuY8XwxEHtSxWBIWxTHD432m-Pz28pOw5N9XwwyM1jziND-TwHDAy4EpdqqjFTfcLGXFp2G1_9kQPvMzpN0a-0cv33yU8yTrseFu0WN_49w_00iMxfrwoAPjbN7IJOj5xw7l0eJ__h0d33Cf_7RZ2r" />
-                            <div>
-                                <h3 class="font-semibold text-text-light dark:text-text-dark">Surah: Al- Baqarah (verses 1-10)</h3>
-                                <p class="text-sm text-primary mt-1">Teacher: Ustadha Aishat</p>
+                    <div v-if="upcomingClasses && upcomingClasses.length > 0">
+                        <div v-for="upcoming in upcomingClasses" :key="upcoming.id" class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <img alt="Instructor" class="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-sm" :src="upcoming.teacher?.avatar || `https://ui-avatars.com/api/?name=${upcoming.teacher?.first_name}+${upcoming.teacher?.last_name}&color=fff&background=5cb65f`" />
+                                <div>
+                                    <h3 class="font-semibold text-text-light dark:text-text-dark">{{ upcoming.title }}</h3>
+                                    <p class="text-sm text-primary mt-1">Teacher: {{ upcoming.teacher?.first_name }} {{ upcoming.teacher?.last_name }}</p>
+                                </div>
                             </div>
-                        </div>
-                        <div class="flex flex-col md:items-end text-sm text-text-muted-light dark:text-text-muted-dark gap-1">
-                            <div class="flex items-center gap-2">
-                                <span class="material-icons text-base">schedule</span>
-                                4:00pm - 4:45 PM
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="material-icons text-base">calendar_today</span>
-                                Today, Jan 30
-                            </div>
-                        </div>
-                    </div>
-                    <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                        <div class="flex items-center gap-4">
-                            <img alt="Instructor" class="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJvtDR4rPSPT0KAMOORKD5t6iR5LuSwOvKnVZI2-hMk_lZElJdqd6YAqpXxK1Gf6BAo2jDvOJgYfddX31xkkuU_3NhUokBmYmCXHeT99zuMXRAfX61Q6Uovo4zig3t3icpikiwf7eCweQ2ys9elY7pQRGiKjBY3xye3RTD-JOv98N2PIiUC7VYnNpx1Wz2j4xvJ6uw-LD5ZRUtkWO6Fe6KZ9UFgg4nGoC3UIJE8ABcDXJKH6JdM2DY1pL8MiPNRtfUejlCogKhR1bf" />
-                            <div>
-                                <h3 class="font-semibold text-text-light dark:text-text-dark">Surah: Al- Baqarah (verses 1-10)</h3>
-                                <p class="text-sm text-primary mt-1">Teacher: Ustadh hakeem</p>
-                            </div>
-                        </div>
-                        <div class="flex flex-col md:items-end text-sm text-text-muted-light dark:text-text-muted-dark gap-1">
-                            <div class="flex items-center gap-2">
-                                <span class="material-icons text-base">schedule</span>
-                                4:00pm - 4:45 PM
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="material-icons text-base">calendar_today</span>
-                                Today, Jan 30
+                            <div class="flex flex-col md:items-end text-sm text-text-muted-light dark:text-text-muted-dark gap-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-icons text-base">schedule</span>
+                                    {{ new Date(upcoming.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="material-icons text-base">calendar_today</span>
+                                    {{ new Date(upcoming.started_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) }}
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                        <div class="flex items-center gap-4">
-                            <img alt="Instructor" class="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiYZ9Vf8Ze7y_5u7_kl8p_oOmcJBYow_vFEALd9llP-JMBRpY8yi9tEFI6xpP7dkTTPkPPH7in8FRyPlshxRoUzdSmbZ9o3-EkwYi6kdZUfluu_16K7GaMuS5WcUjO3waYA9JWdBBDVrX57MRdGSdDKZ47ucxwfhcd9YtafmOSgBnkPJH8KQCiFyhmNI4zo7lUemavcM7rTk2rtu3dfl_BEmL0WXCTf0l9uyVNJ2WaBRalZUKbg96NOFSJxioMf0I9sbXUn8b6lWbA" />
-                            <div>
-                                <h3 class="font-semibold text-text-light dark:text-text-dark">Surah: Al- Baqarah (verses 1-10)</h3>
-                                <p class="text-sm text-primary mt-1">Teacher: Ustadha Aishat</p>
-                            </div>
-                        </div>
-                        <div class="flex flex-col md:items-end text-sm text-text-muted-light dark:text-text-muted-dark gap-1">
-                            <div class="flex items-center gap-2">
-                                <span class="material-icons text-base">schedule</span>
-                                4:00pm - 4:45 PM
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="material-icons text-base">calendar_today</span>
-                                Today, Jan 30
-                            </div>
-                        </div>
+                    <div v-else class="p-6 text-text-muted-light dark:text-text-muted-dark">
+                        No upcoming classes scheduled.
                     </div>
                 </div>
             </section>
@@ -206,40 +176,36 @@ onBeforeUnmount(() => {
                 <section>
                     <h2 class="text-xl font-bold text-text-light dark:text-text-dark mb-6">Announcement</h2>
                     <div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 space-y-6">
-                        <div class="flex gap-4 items-start">
-                            <div class="mt-1 text-primary">
-                                <span class="material-icons rotate-12">campaign</span>
-                            </div>
-                            <div>
-                                <p class="text-text-light dark:text-text-dark font-medium">New interactive exercises available Juz 'amma</p>
-                                <p class="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">2 hours ago</p>
+                        <div v-if="announcements && announcements.length > 0">
+                            <div v-for="announcement in announcements" :key="announcement.id" class="flex gap-4 items-start">
+                                <div class="mt-1 text-primary">
+                                    <span class="material-icons rotate-12">campaign</span>
+                                </div>
+                                <div>
+                                    <p class="text-text-light dark:text-text-dark font-medium">{{ announcement.message }}</p>
+                                    <p class="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">{{ new Date(announcement.created_at).toLocaleString() }}</p>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex gap-4 items-start">
-                            <div class="mt-1 text-primary">
-                                <span class="material-icons rotate-12">campaign</span>
-                            </div>
-                            <div>
-                                <p class="text-text-light dark:text-text-dark font-medium">Platform maintenance scheduled for Feb, 12 2023</p>
-                                <p class="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">2 hours ago</p>
-                            </div>
+                        <div v-else>
+                            <p class="text-text-muted-light dark:text-text-muted-dark">No announcements.</p>
                         </div>
                     </div>
                 </section>
                 <section>
                     <h2 class="text-xl font-bold text-text-light dark:text-text-dark mb-6">Recent Activities</h2>
                     <div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 space-y-6">
-                        <div class="flex gap-4 items-start">
-                            <div class="mt-1.5 h-3 w-3 rounded-full bg-primary flex-shrink-0"></div>
-                            <p class="text-text-light dark:text-text-dark text-sm">Class Suratul fathia completed with ustadha aisha</p>
+                        <div v-if="recentActivities && recentActivities.length > 0">
+                            <div v-for="activity in recentActivities" :key="activity.id" class="flex gap-4 items-start">
+                                <div class="mt-1.5 h-3 w-3 rounded-full bg-primary flex-shrink-0"></div>
+                                <div>
+                                    <p class="text-text-light dark:text-text-dark text-sm">Class "{{ activity.title }}" completed with {{ activity.teacher.first_name }} {{ activity.teacher.last_name }}.</p>
+                                    <p class="text-xs text-text-muted-light dark:text-text-muted-dark mt-1">{{ new Date(activity.ended_at).toLocaleString() }}</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="flex gap-4 items-start">
-                            <div class="mt-1.5 h-3 w-3 rounded-full bg-primary flex-shrink-0"></div>
-                            <p class="text-text-light dark:text-text-dark text-sm">Class Suratul fathia completed with ustadha aisha</p>
-                        </div>
-                        <div class="flex gap-4 items-start">
-                            <div class="mt-1.5 h-3 w-3 rounded-full bg-primary flex-shrink-0"></div>
-                            <p class="text-text-light dark:text-text-dark text-sm">Class Tajweed essentials completed with Ustadh Hakeem</p>
+                        <div v-else>
+                            <p class="text-text-muted-light dark:text-text-muted-dark">No recent activities.</p>
                         </div>
                     </div>
                 </section>

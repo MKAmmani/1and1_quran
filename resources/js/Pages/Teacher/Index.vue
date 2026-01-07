@@ -1142,8 +1142,11 @@ const logout = () => {
 // Function to start a live session
 const startLiveSession = async () => {
     try {
-        // Use the new route to start or get a session
-        const response = await axios.post(route('live-class.start'));
+        const studentIds = props.students.map(s => s.id);
+        const response = await axios.post(route('live-class.start'), {
+            title: "Today's Quran Class",
+            students: studentIds,
+        });
 
         if (response.data && response.data.success) {
             // Redirect to the live class page

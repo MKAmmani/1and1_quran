@@ -1,12 +1,14 @@
 <script setup>
-import { onMounted, ref, computed } from 'vue'
-import { Link } from '@inertiajs/vue3';
+import { onMounted, ref, computed, onBeforeUnmount } from 'vue'
+import { Link, usePage } from '@inertiajs/vue3';
 
 const props = defineProps({
   surahs: Object
 });
 
 const search = ref('')
+const sidebarOpen = ref(false);
+const page = usePage();
 
 const filteredSurahs = computed(() => {
     if (!search.value) {
@@ -29,19 +31,43 @@ const toggleTheme = () => {
     }
 }
 
+const handleResize = () => {
+    sidebarOpen.value = window.innerWidth >= 768;
+};
+
 onMounted(() => {
     if (localStorage.theme === 'dark') {
         document.documentElement.classList.add('dark')
     } else {
         document.documentElement.classList.remove('dark')
     }
+    handleResize();
+    window.addEventListener('resize', handleResize);
 })
+
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', handleResize);
+});
 </script>
 
 <template>
 <body class="bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark font-sans antialiased transition-colors duration-200">
+    <!-- Mobile Header with Hamburger Menu -->
+    <header class="md:hidden h-16 px-4 flex items-center justify-between flex-shrink-0 bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark z-20">
+        <button @click="sidebarOpen = true" class="p-2 rounded-lg text-text-light dark:text-text-dark">
+            <span class="material-icons">menu</span>
+        </button>
+        <div class="w-24">
+            <img alt="1-on-1 Quran Classes Logo" class="w-full h-auto object-contain" src="/images/app_logo.jpg" />
+        </div>
+        <div class="w-10"></div> <!-- Spacer for alignment -->
+    </header>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div v-if="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 md:hidden"></div>
+
 <div class="flex h-screen overflow-hidden">
-<aside class="w-64 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex flex-col justify-between h-full shadow-sm z-10 transition-colors duration-300">
+<aside :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}" class="fixed md:static md:translate-x-0 top-0 left-0 h-full w-64 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex flex-col justify-between z-40 md:z-auto transition-all duration-300 ease-in-out shadow-sm">
 <div>
 <div class="p-6 flex justify-center mb-6">
 <img alt="placeholder" class="hidden" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBitpuLeGUBxVwelbVxUGTabZuI9YH1CMGYRKmbCatLghV12E-da741MIY948KjrUQquSKB9F6jUDg5vyF4nt39DTx94e730rpcW_C4Lahh9hKhy4F6DvdO4OrITMiLumtrq5tDCrrcs2wq5TChbHGsaASz4Ljp60TjyRm68wf9TsL1I1pwBwoj0r3AKSnja60KrZ4L2dXoTr5cbrri8x_beXn3rV1zyiJuG7TAblM7BpNcadl1INMAXOQhk_DTRz20f6plxiN56RM"/> 
@@ -97,17 +123,17 @@ onMounted(() => {
 <main class="flex-1 flex flex-col h-screen overflow-y-auto">
 <header class="bg-surface-light dark:bg-surface-dark px-8 py-6 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-border-light dark:border-border-dark sticky top-0 z-10">
 <div class="mb-4 md:mb-0">
-<h2 class="text-xl md:text-2xl font-semibold text-gray-800 dark:text-gray-100">Assalaikum Alaykum, Ustadha Aisha</h2>
+<h2 class="text-xl md:text-2xl font-semibold text-gray-800 dark:text-gray-100">Assalaikum Alaykum, {{ $page.props.auth.user.first_name }}</h2>
 </div>
 <div class="flex flex-col md:flex-row items-end md:items-center gap-6">
-<span class="text-sm text-gray-500 dark:text-gray-400 font-medium">Monday, January 30 2023.</span>
+<span class="text-sm text-gray-500 dark:text-gray-400 font-medium">{{ new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</span>
 <div class="flex items-center gap-3">
 <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-primary">
 <span class="material-symbols-outlined">person</span>
 </div>
 <div class="flex flex-col">
-<span class="text-sm font-bold text-gray-800 dark:text-gray-100">Aisha</span>
-<span class="text-xs text-gray-500 dark:text-gray-400">info@Aisha.com</span>
+<span class="text-sm font-bold text-gray-800 dark:text-gray-100">{{ $page.props.auth.user.first_name }}</span>
+<span class="text-xs text-gray-500 dark:text-gray-400">{{ $page.props.auth.user.email }}</span>
 </div>
 </div>
 </div>

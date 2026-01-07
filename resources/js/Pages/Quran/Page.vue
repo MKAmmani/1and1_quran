@@ -1,7 +1,7 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import axios from 'axios';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 
 const props = defineProps({
   surah_details: Object,
@@ -12,6 +12,8 @@ const props = defineProps({
 
 const searchAyah = ref('');
 const searchedVerse = ref(null);
+const sidebarOpen = ref(false);
+const page = usePage();
 
 const fetchAyah = async () => {
     if (!searchAyah.value) {
@@ -29,13 +31,40 @@ const fetchAyah = async () => {
 
 const currentDate = ref(new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
 
+const handleResize = () => {
+    sidebarOpen.value = window.innerWidth >= 768;
+};
+
+onMounted(() => {
+    handleResize();
+    window.addEventListener('resize', handleResize);
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', handleResize);
+});
+
 </script>
 
 <template>
-<body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark antialiased h-screen overflow-hidden flex transition-colors duration-300">
-    <aside class="w-64 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex flex-col justify-between h-full shadow-sm z-10 transition-colors duration-300">
+<body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark antialiased h-screen overflow-hidden flex flex-col md:flex-row transition-colors duration-300">
+    <!-- Mobile Header with Hamburger Menu -->
+    <header class="md:hidden h-16 px-4 flex items-center justify-between flex-shrink-0 bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark z-20">
+        <button @click="sidebarOpen = true" class="p-2 rounded-lg text-text-light dark:text-text-dark">
+            <span class="material-icons">menu</span>
+        </button>
+        <div class="w-24">
+            <img alt="1-on-1 Quran Classes Logo" class="w-full h-auto object-contain" src="/images/app_logo.jpg" />
+        </div>
+        <div class="w-10"></div> <!-- Spacer for alignment -->
+    </header>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div v-if="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 md:hidden"></div>
+
+    <aside :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}" class="fixed md:static md:translate-x-0 top-0 left-0 h-full w-64 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex flex-col justify-between z-40 md:z-auto transition-all duration-300 ease-in-out shadow-sm">
         <div>
-            <div class="p-6 flex justify-center mb-6">
+            <div class="p-6 flex justify-center mb-6 md:mb-0">
                 <div class="w-32">
                     <img alt="1-on-1 Quran Classes Logo" class="w-full h-auto object-contain" src="/images/app_logo.jpg" />
                 </div>
@@ -86,24 +115,27 @@ const currentDate = ref(new Date().toLocaleDateString('en-US', { weekday: 'long'
         </div>
     </aside>
     <main class="flex-1 flex flex-col h-full overflow-hidden relative">
-        <header class="h-20 bg-surface-light dark:bg-surface-dark flex items-center justify-between px-8 border-b border-border-light dark:border-border-dark transition-colors duration-300">
-            <div>
+        <header class="h-20 bg-surface-light dark:bg-surface-dark flex items-center justify-between px-8 border-b border-border-light dark:border-border-dark transition-colors duration-300 flex-shrink-0">
+            <div class="hidden md:block">
                 <h1 class="text-xl font-semibold text-text-light dark:text-text-dark">Assalaikum Alaykum, {{ $page.props.auth.user.first_name }} {{ $page.props.auth.user.last_name }}</h1>
+            </div>
+             <div class="md:hidden text-lg font-semibold text-text-light dark:text-text-dark">
+                Quran Page
             </div>
             <div class="flex items-center space-x-6">
                 <span class="text-sm text-muted-light dark:text-muted-dark hidden md:block">{{ currentDate }}</span>
-                <div class="flex items-center pl-6 border-l border-gray-200 dark:border-gray-700">
+                <div class="flex items-center pl-0 md:pl-6 md:border-l border-gray-200 dark:border-gray-700">
                     <div class="w-10 h-10 rounded-full bg-green-50 dark:bg-green-900 flex items-center justify-center text-primary dark:text-green-300 border border-green-100 dark:border-green-800">
                         <span class="material-icons">person_outline</span>
                     </div>
-                    <div class="ml-3">
+                    <div class="ml-3 hidden md:block">
                         <p class="text-sm font-bold text-text-light dark:text-text-dark">{{ $page.props.auth.user.first_name }}</p>
                         <p class="text-xs text-muted-light dark:text-muted-dark">{{ $page.props.auth.user.email }}</p>
                     </div>
                 </div>
             </div>
         </header>
-        <div class="flex-1 overflow-y-auto p-8 bg-background-light dark:bg-background-dark transition-colors duration-300">
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-background-light dark:bg-background-dark transition-colors duration-300">
             <div class="flex flex-col md:flex-row md:items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-text-light dark:text-text-dark mb-4 md:mb-0">{{ surah_details.name_simple }}</h2>
                 <div class="relative w-full md:w-72">
@@ -124,20 +156,20 @@ const currentDate = ref(new Date().toLocaleDateString('en-US', { weekday: 'long'
                 </div>
 
                 <div v-if="searchedVerse">
-                    <div class="flex flex-row items-center space-x-4">
-                        <div class="w-1/12 text-center text-lg font-bold">{{ searchedVerse.verse_key }}</div>
-                        <div class="w-11/12 flex flex-col">
-                            <p class="text-right text-3xl mb-4 font-serif leading-loose">{{ searchedVerse.text_uthmani }}</p>
-                            <p v-if="searchedVerse.translations && searchedVerse.translations.length > 0" class="text-left text-xl text-gray-600 dark:text-gray-400">{{ searchedVerse.translations[0].text }}</p>
+                    <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
+                        <div class="w-full md:w-1/12 text-center text-lg font-bold">{{ searchedVerse.verse_key }}</div>
+                        <div class="w-full md:w-11/12 flex flex-col">
+                            <p class="text-right text-2xl md:text-3xl mb-4 font-serif leading-loose">{{ searchedVerse.text_uthmani }}</p>
+                            <p v-if="searchedVerse.translations && searchedVerse.translations.length > 0" class="text-left text-lg md:text-xl text-gray-600 dark:text-gray-400">{{ searchedVerse.translations[0].text }}</p>
                         </div>
                     </div>
                 </div>
                 <div v-else class="flex flex-col space-y-8">
-                    <div v-for="verse in verses.verses" :key="verse.id" class="flex flex-row items-center space-x-4">
-                        <div class="w-1/12 text-center text-lg font-bold">{{ verse.verse_key }}</div>
-                        <div class="w-11/12 flex flex-col">
-                            <p class="text-right text-3xl mb-4 font-serif leading-loose">{{ verse.text_uthmani }}</p>
-                            <p v-if="verse.translations && verse.translations.length > 0" class="text-left text-xl text-gray-600 dark:text-gray-400">{{ verse.translations[0].text }}</p>
+                    <div v-for="verse in verses.verses" :key="verse.id" class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
+                        <div class="w-full md:w-1/12 text-center text-lg font-bold">{{ verse.verse_key }}</div>
+                        <div class="w-full md:w-11/12 flex flex-col">
+                            <p class="text-right text-2xl md:text-3xl mb-4 font-serif leading-loose">{{ verse.text_uthmani }}</p>
+                            <p v-if="verse.translations && verse.translations.length > 0" class="text-left text-lg md:text-xl text-gray-600 dark:text-gray-400">{{ verse.translations[0].text }}</p>
                         </div>
                     </div>
                 </div>

@@ -59,11 +59,13 @@ Route::middleware(['auth', 'verified', 'role:' . UserRole::Teacher->value])->gro
     Route::get('/prepare-student',[TeacherController::class, 'prepare_class'])->name('prepre_class');
     Route::get('/Announcement',[TeacherController::class, 'announcement'])->name('announcement');
     Route::get('/live-class', [TeacherController::class,'live'])->name('live');
+    Route::get('/teacher/students', [TeacherController::class, 'students'])->name('teacher.students');
     Route::post('/live-class/start', [TeacherController::class, 'start'])->name('live-class.start');
     Route::post('/class/schedule', [TeacherController::class, 'schedule'])->name('class.schedule');
     Route::get('/live-sessions/{liveSession}/join-requests', [TeacherController::class, 'getJoinRequests'])->name('live-sessions.join-requests');
     Route::post('/join-requests/{joinRequest}/approve', [TeacherController::class, 'approveJoinRequest'])->name('join-requests.approve');
     Route::post('/join-requests/{joinRequest}/decline', [TeacherController::class, 'declineJoinRequest'])->name('join-requests.decline');
+    Route::post('/announcements', [TeacherController::class, 'sendAnnouncement'])->name('announcements.send');
 });
 
 Route::middleware('auth')->group(function () {
@@ -74,7 +76,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/quran/surah/{surah}/{page?}', [QuranController::class, 'showSurah'])->name('quran.surah');
     Route::get('/quran/ayah/{surah}/{ayah}', [QuranController::class, 'getAyah']);
     Route::get('/quran/ayahs/{surah}/{startAyah}/{count?}', [QuranController::class, 'getMultipleAyahs']);
-    Route::get('/quran/surahs', [QuranController::class, 'surahs']);
+    Route::get('/quran/surahs', [QuranController::class, 'surahs'])->name('quran.surahs');
     Route::get('/quran/chapters', [QuranController::class, 'getChapters']);
     Route::post('/live-sessions/{liveSession}/quran-verse', [TeacherController::class, 'changeQuranVerse']);
 });

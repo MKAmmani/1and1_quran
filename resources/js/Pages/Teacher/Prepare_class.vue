@@ -34,17 +34,27 @@ const scheduleClass = () => {
 };
 
 const startClass = async () => {
+    if (form.value.students.length === 0) {
+        alert('Please select at least one student.');
+        return;
+    }
     try {
         const response = await axios.post(route('live-class.start'), form.value);
         if (response.data && response.data.success) {
             router.visit(route('live'));
         } else {
             console.error('Failed to start live session:', response.data.message);
-            alert('Failed to start live session. Please try again.');
+            alert(response.data.message || 'Failed to start live session. Please try again.');
         }
     } catch (error) {
         console.error('Error starting live session:', error);
-        alert('Failed to start live session. Please try again.');
+        if (error.response && error.response.status === 422) {
+            const errors = error.response.data.errors;
+            const errorMessages = Object.values(errors).flat().join('\n');
+            alert('Validation errors:\n' + errorMessages);
+        } else {
+            alert('Failed to start live session. Please try again.');
+        }
     }
 };
 
@@ -52,37 +62,11 @@ const logout = () => {
     router.post(route("logout"));
 };
 
-const isMobileMenuOpen = ref(false);
+const sidebarOpen = ref(false);
 
-const toggleMobileMenu = () => {
-    if (!isMobileMenuOpen.value) {
-        // Show the menu first, then trigger animation
-        isMobileMenuOpen.value = true;
-        // Trigger the slide-in animation
-        setTimeout(() => {
-            const mobileNav = document.getElementById('mobileNav');
-            if (mobileNav) {
-                mobileNav.classList.remove('-translate-x-full');
-                mobileNav.classList.add('translate-x-0');
-            }
-        }, 10);
-    } else {
-        closeMobileMenu();
-    }
-};
-
-const closeMobileMenu = () => {
-    if (isMobileMenuOpen.value) {
-        // Trigger the slide-out animation first
-        const mobileNav = document.getElementById('mobileNav');
-        if (mobileNav) {
-            mobileNav.classList.remove('translate-x-0');
-            mobileNav.classList.add('-translate-x-full');
-        }
-        // Then hide the menu after animation completes
-        setTimeout(() => {
-            isMobileMenuOpen.value = false;
-        }, 300);
+const handleResize = () => {
+    if (window.innerWidth >= 768) { // md breakpoint
+        sidebarOpen.value = false;
     }
 };
 
@@ -92,500 +76,182 @@ const isCurrentRoute = (routeName) => {
 };
 
 onMounted(() => {
-    const handleClickOutside = (event) => {
-        const menuToggle = document.getElementById('menuToggle');
-        const mobileNav = document.getElementById('mobileNav');
-
-        if (isMobileMenuOpen.value && menuToggle && mobileNav &&
-            !mobileNav.contains(event.target) &&
-            !menuToggle.contains(event.target)) {
-            closeMobileMenu();
-        }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-
-    // Clean up the event listener when component is unmounted
-    onUnmounted(() => {
-        document.removeEventListener('click', handleClickOutside);
-    });
+    sidebarOpen.value = window.innerWidth >= 768; // Initialize sidebar visibility
+    window.addEventListener('resize', handleResize);
 });
 
-
+onUnmounted(() => {
+    window.removeEventListener('resize', handleResize);
+});
 </script>
 
 <template>
-    <body class="bg-gray-50 text-gray-800 min-h-screen">
+<body class="bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark min-h-screen flex flex-row">
+    <!-- Mobile Header with Hamburger Menu -->
+    <header class="md:hidden h-16 px-4 flex items-center justify-between flex-shrink-0 bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark z-20">
+        <button @click="sidebarOpen = true" class="p-2 rounded-lg text-text-primary-light dark:text-text-primary-dark">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+        <img src="/images/app_logo.jpg" alt="App Logo" class="h-10 w-auto">
+        <div class="w-10"></div> <!-- Spacer for alignment -->
+    </header>
 
-    <!-- Desktop Layout -->
-    <div class="hidden lg:flex min-h-screen">
-        <!-- Sidebar -->
-        <aside class="w-64 bg-white shadow-lg flex flex-col">
-                <!-- Logo -->
-                <div class="px-8 pt-8 pb-4">
-                    <img
-                        src="/images/app_logo.jpg"
-                        alt="1-on-1 Quran Classes Logo"
-                        class="w-48 mx-auto"
-                    />
-                </div>
+    <!-- Mobile Sidebar Overlay -->
+    <div v-if="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 md:hidden"></div>
 
-                <!-- Navigation -->
-                <nav class="flex-1 px-6 pt-2 pb-6 flex flex-col">
-                    <div class="space-y-2">
-                        <Link
-                            :href="route('teacher.index')"
-                            :class="{'bg-teal-600 text-white': isCurrentRoute('teacher.index'), 'text-gray-700 hover:bg-gray-100': !isCurrentRoute('teacher.index')}"
-                            class="flex items-center gap-4 px-6 py-4 rounded-lg font-medium"
-                        >
-                            <svg
-                                class="w-6 h-6"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                                />
-                            </svg>
-                            Home
-                        </Link>
-                        <Link
-                            :href="route('prepre_class')"
-                            :class="{'bg-teal-600 text-white': isCurrentRoute('prepre_class'), 'text-gray-700 hover:bg-gray-100': !isCurrentRoute('prepre_class')}"
-                            class="flex items-center gap-4 px-6 py-4 rounded-lg font-medium"
-                        >
-                            <svg
-                                class="w-6 h-6"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                                />
-                            </svg>
-                            Prepare
-                        </Link>
-                        <a
-                            href="#"
-                            class="flex items-center gap-4 text-gray-700 px-6 py-4 rounded-lg hover:bg-gray-100"
-                        >
-                            <svg
-                                class="w-6 h-6"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                                />
-                            </svg>
-                            Students
-                        </a>
-                        <a
-                            href="#"
-                            class="flex items-center gap-4 text-gray-700 px-6 py-4 rounded-lg hover:bg-gray-100"
-                        >
-                            <svg
-                                class="w-6 h-6"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                                />
-                            </svg>
-                            Live class
-                        </a>
-                        <a
-                            href="#"
-                            class="flex items-center gap-4 text-gray-700 px-6 py-4 rounded-lg hover:bg-gray-100"
-                        >
-                            <svg
-                                class="w-6 h-6"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                />
-                            </svg>
-                            Quran Pages
-                        </a>
-                        <Link
-                            :href="route('announcement')"
-                            :class="{'bg-teal-600 text-white': isCurrentRoute('announcement'), 'text-gray-700 hover:bg-gray-100': !isCurrentRoute('announcement')}"
-                            class="flex items-center gap-4 px-6 py-4 rounded-lg hover:bg-gray-100"
-                        >
-                            <svg
-                                class="w-6 h-6"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"
-                                />
-                            </svg>
-                            Announcement
-                        </Link>
-                        <a
-                            href="#"
-                            class="flex items-center gap-4 text-gray-700 px-6 py-4 rounded-lg hover:bg-gray-100"
-                        >
-                            <svg
-                                class="w-6 h-6"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                                />
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                />
-                            </svg>
-                            Settings
-                        </a>
+    <aside :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}" class="fixed md:static md:translate-x-0 top-0 left-0 min-h-screen md:h-full w-64 bg-surface-light dark:bg-surface-dark border-r border-gray-200 dark:border-gray-800 flex-shrink-0 flex flex-col z-40 md:z-auto transition-all duration-300 ease-in-out overflow-y-auto">
+        <div class="p-6 flex justify-center items-center">
+            <div class="relative flex items-center justify-center w-[186px] h-[122px]">
+                <img alt="1-on-1 Quran Classes Logo" class="object-contain h-24 w-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2GccdOXd8F0wAWHy8VMgqTjnmXj_L8491ObQTH3eTW2AkpvSMmNonjVejGPzDMaRasIU2Ne7rn6u0yYFq19RoVzrR6iZCI57eyPYmH71NZ8tNRXkdBrjj-o3nI9C6zeqdPVAfWY--g4HZZ3YUVsR4pIMxgRoS2pMB_SR3yHFjbATSOcUhgqzGsAhfttLbd0tn-p5aCTEm-p-_ma6r3raniZZhBIG6XNwxDRHrREizRcdk7cy5vl25lqx2rKNwxC-3BX5zEltVys4" />
+            </div>
+        </div>
+        <nav class="flex-1 px-4 space-y-2 mt-4">
+            <Link :href="route('teacher.index')" :class="{'bg-primary text-white shadow-md': isCurrentRoute('teacher.index'), 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 group': !isCurrentRoute('teacher.index')}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors">
+                <span class="material-icons-outlined">home</span>
+                <span class="font-medium">Home</span>
+            </Link>
+            <Link :href="route('prepre_class')" :class="{'bg-primary text-white shadow-md': isCurrentRoute('prepre_class'), 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 group': !isCurrentRoute('prepre_class')}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors">
+                <span class="material-icons-outlined">menu_book</span>
+                <span class="font-medium">Prepare</span>
+            </Link>
+            <Link :href="route('teacher.students')" :class="{'bg-primary text-white shadow-md': isCurrentRoute('teacher.students'), 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 group': !isCurrentRoute('teacher.students')}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors">
+                <span class="material-icons-outlined">playlist_add_check</span>
+                <span class="font-medium">Students</span>
+            </Link>
+            <Link :href="route('live')" :class="{'bg-primary text-white shadow-md': isCurrentRoute('live'), 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 group': !isCurrentRoute('live')}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors">
+                <span class="material-icons-outlined">live_tv</span>
+                <span class="font-medium">Live class</span>
+            </Link>
+            <Link :href="route('quran.surahs')" :class="{'bg-primary text-white shadow-md': isCurrentRoute('quran.surahs'), 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 group': !isCurrentRoute('quran.surahs')}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors">
+                <span class="material-icons-outlined">auto_stories</span>
+                <span class="font-medium">Quran library</span>
+            </Link>
+            <Link :href="route('teacher.history')" :class="{'bg-primary text-white shadow-md': isCurrentRoute('teacher.history'), 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 group': !isCurrentRoute('teacher.history')}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors">
+                <span class="material-icons-outlined">history_edu</span>
+                <span class="font-medium">Class history</span>
+            </Link>
+        </nav>
+        <div class="p-4 mt-auto border-t border-gray-100 dark:border-gray-800 space-y-2">
+            <Link :href="route('profile.edit')" :class="{'bg-primary text-white shadow-md': isCurrentRoute('profile.edit'), 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 group': !isCurrentRoute('profile.edit')}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors">
+                <span class="material-icons-outlined">settings</span>
+                <span class="font-medium">Settings</span>
+            </Link>
+            <button @click="logout" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group">
+                <span class="material-icons-outlined">logout</span>
+                <span class="font-medium">Logout</span>
+            </button>
+        </div>
+    </aside>
+    <main class="flex-1 overflow-y-auto h-full p-6 lg:p-10">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+            <div>
+                <h1 class="text-2xl font-display font-semibold text-gray-800 dark:text-white">Assalaikum Alaykum, {{ $page.props.auth.user.first_name }}</h1>
+            </div>
+            <div class="flex items-center gap-6">
+                <span class="text-sm text-text-secondary-light dark:text-text-secondary-dark hidden sm:block">{{ currentDate }}</span>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                        <span class="material-icons-outlined text-gray-500 dark:text-gray-400">person</span>
                     </div>
-                    <button @click="logout" class="flex items-center gap-4 text-gray-700 px-6 py-4 rounded-lg hover:bg-gray-100 mt-auto w-full text-left">
-                        <svg
-                            class="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                            />
-                        </svg>
-                        Logout
-                    </button>
-                </nav>
-            </aside>
-
-        <!-- Main Content -->
-        <main class="flex-1 p-10">
-            <!-- Header -->
-            <header class="flex justify-between items-center mb-10">
-                <div>
-                    <h1 class="text-2xl font-semibold">Assalaikum Alaykum, {{ $page.props.auth.user.first_name }}</h1>
-                    <p class="text-gray-500">{{ currentDate }}</p>
-                </div>
-                <div class="flex items-center gap-4">
-                    <div class="text-right">
-                        <p class="font-medium">{{ $page.props.auth.user.first_name }} {{ $page.props.auth.user.last_name }}</p>
-                        <p class="text-sm text-gray-500">{{ $page.props.auth.user.email }}</p>
+                    <div class="flex flex-col">
+                        <span class="text-sm font-semibold text-gray-800 dark:text-white">{{ $page.props.auth.user.first_name }} {{ $page.props.auth.user.last_name }}</span>
+                        <span class="text-xs text-text-secondary-light dark:text-text-secondary-dark">{{ $page.props.auth.user.email }}</span>
                     </div>
-                    <div class="w-12 h-12 bg-gray-200 rounded-full border-2 border-dashed"></div>
                 </div>
-            </header>
-
-            <!-- Prepare my class -->
-            <section class="bg-white rounded-2xl shadow-sm p-8">
-                <h2 class="text-3xl font-bold mb-8">Prepare my class</h2>
-
-                <!-- Select students -->
-                <h3 class="text-xl font-semibold mb-6">Select students</h3>
-
-                <div class="space-y-4 mb-10">
-                    <!-- Student Row -->
-                    <div v-for="student in students" :key="student.id" class="grid grid-cols-12 gap-2 items-center">
-                        <div class="col-span-1 flex justify-center">
-                            <label class="flex items-center cursor-pointer">
-                                <input type="checkbox" :value="student.id" v-model="form.students" class="w-5 h-5 text-teal-600 bg-white border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 checked:bg-teal-600 checked:border-teal-600">
-                            </label>
+            </div>
+        </header>
+        <div class="space-y-6">
+            <section class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
+                <h2 class="text-2xl font-display font-semibold text-gray-800 dark:text-white mb-6">Prepare my class</h2>
+                <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-4">Select students</h3>
+                <div class="space-y-4">
+                    <div v-for="student in students" :key="student.id" class="grid grid-cols-2 md:grid-cols-12 items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-750 border border-gray-100 dark:border-gray-700 transition-colors">
+                        <div class="md:col-span-3 flex items-center gap-4">
+                            <input type="checkbox" :value="student.id" v-model="form.students" class="w-6 h-6 text-primary bg-white border-gray-300 rounded focus:ring-primary dark:focus:ring-primary dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                            <span class="font-medium text-lg text-gray-800 dark:text-gray-200 w-32">{{ student.first_name }} {{ student.last_name }}</span>
                         </div>
-                        <div class="col-span-2">
-                            <p class="font-medium text-lg">{{ student.first_name }}</p>
-                            <p class="text-sm text-gray-500">0 of 114 surahs</p>
-                        </div>
-                        <div class="col-span-6">
-                            <div class="w-full bg-gray-200 rounded-full h-3">
-                                <div class="bg-teal-600 h-3 rounded-full" style="width: 0%"></div>
+                        <div class="hidden md:flex md:col-span-6 flex-col">
+                            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                <span>{{ student.surahs_completed }} of 114 surahs</span>
+                                <span class="text-gray-800 dark:text-gray-200 font-medium">{{ student.progress }}% completed</span>
                             </div>
-                            <p class="text-sm text-gray-600 mt-1">0% completed</p>
+                            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
+                                <div class="bg-primary h-1.5 rounded-full" :style="{ width: student.progress + '%' }"></div>
+                            </div>
                         </div>
-                        <div class="col-span-2 flex justify-end">
-                            <span class="flex items-center gap-2 text-red-600"><span class="w-3 h-3 bg-red-600 rounded-full"></span> Offline</span>
-                        </div>
-                        <div class="col-span-1 flex justify-center">
-                            <button class="text-gray-400 text-xl leading-none">⋮</button>
+                        <div class="md:col-span-3 flex items-center justify-end gap-4">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full" :class="{'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]': student.online, 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]': !student.online}"></span>
+                                <span class="text-xs text-gray-600 dark:text-gray-400">{{ student.online ? 'Online' : 'Offline' }}</span>
+                            </div>
+                            <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                <span class="material-icons-outlined">more_vert</span>
+                            </button>
                         </div>
                     </div>
                 </div>
-
-                <a href="#" class="text-teal-600 font-medium flex items-center gap-2 justify-center mb-10">↓ View all</a>
-
-                <!-- Choose Surah/Quran page -->
-                <h3 class="text-2xl font-bold mb-6">Choose Surah/Quran page</h3>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <!-- First Column: Surah, Title, Date -->
-                    <div class="space-y-6">
-                        <div>
-                            <label class="block text-lg font-medium mb-2">Surah</label>
-                            <select v-model="form.surah_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                                <option :value="null">Select Surah</option>
-                                <option v-for="surah in surahs" :key="surah.id" :value="surah.id">
-                                    {{ surah.name_simple }}
-                                </option>
-                            </select>
+                <div class="flex justify-center mt-6">
+                    <button class="flex items-center text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors">
+                        <span class="material-icons-outlined text-lg mr-1">expand_more</span>
+                        View all
+                    </button>
+                </div>
+            </section>
+            <section class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
+                <h3 class="text-2xl font-display font-semibold text-gray-800 dark:text-white mb-6">Choose Surah/Quran page</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="md:col-span-2 space-y-6">
+                        <div class="flex flex-col md:flex-row gap-6">
+                            <div class="flex-1">
+                                <div class="relative">
+                                    <select v-model="form.surah_id" class="block w-full pl-3 pr-10 py-3 text-base border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md appearance-none">
+                                        <option :value="null">Select Surah</option>
+                                        <option v-for="surah in surahs" :key="surah.id" :value="surah.id">
+                                            {{ surah.name_simple }}
+                                        </option>
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-400">
+                                        <span class="material-icons-outlined">expand_more</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <input v-model="form.page" class="block w-full pl-3 pr-3 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:ring-primary focus:border-primary sm:text-sm rounded-md placeholder-gray-300 dark:placeholder-gray-600" placeholder="page" type="number" />
+                            </div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-6">
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                                <input v-model="form.title" class="block w-full pl-3 pr-3 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:ring-primary focus:border-primary sm:text-sm rounded-md placeholder-gray-300 dark:placeholder-gray-600" placeholder="Suratul Waqiah" type="text" />
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes (Optional)</label>
+                                <input v-model="form.notes" class="block w-full pl-3 pr-3 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:ring-primary focus:border-primary sm:text-sm rounded-md placeholder-gray-300 dark:placeholder-gray-600" placeholder="Focus on tajweed" type="text" />
+                            </div>
                         </div>
                         <div>
-                            <label class="block text-lg font-medium mb-2">Title</label>
-                            <input v-model="form.title" type="text" placeholder="Suratul Waqiah" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                        </div>
-                        <div>
-                            <label class="block text-lg font-medium mb-2">Date</label>
-                            <input v-model="form.date" type="date" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <label class="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-3">Date and time</label>
+                            <div class="flex flex-col md:flex-row gap-6">
+                                <div class="flex-1">
+                                    <input v-model="form.date" class="block w-full pl-3 pr-3 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:ring-primary focus:border-primary sm:text-sm rounded-md placeholder-gray-300 dark:placeholder-gray-600" type="date" />
+                                </div>
+                                <div class="flex-1">
+                                    <input v-model="form.time" class="block w-full pl-3 pr-3 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:ring-primary focus:border-primary sm:text-sm rounded-md placeholder-gray-300 dark:placeholder-gray-600" type="time" />
+                                </div>
+                            </div>
                         </div>
                     </div>
-
-                    <!-- Second Column: Page, Notes, Time -->
-                    <div class="space-y-6">
-                        <div>
-                            <label class="block text-lg font-medium mb-2">Page</label>
-                            <input v-model="form.page" type="number" placeholder="page" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                        </div>
-                        <div>
-                            <label class="block text-lg font-medium mb-2">Notes (Optional)</label>
-                            <input v-model="form.notes" type="text" placeholder="Focus on tajweed" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                        </div>
-                        <div>
-                            <label class="block text-lg font-medium mb-2">Time</label>
-                            <input v-model="form.time" type="time" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
-                        </div>
-                    </div>
-
-                    <!-- Third Column: Start class, Schedule class -->
-                    <div class="flex flex-col justify-start space-y-4 h-full pt-4">
-                        <button @click="startClass" class="bg-teal-600 text-white px-6 py-4 rounded-lg font-bold hover:bg-teal-700">Start class</button>
-                        <button @click="scheduleClass" class="border-2 border-teal-600 text-teal-600 px-6 py-4 rounded-lg font-bold hover:bg-teal-50">Schedule class</button>
+                    <div class="flex flex-col gap-4 justify-start pt-0 lg:pt-0">
+                        <button @click="startClass" class="w-full bg-primary hover:bg-secondary text-white font-semibold py-4 px-6 rounded-lg shadow transition-colors text-lg">
+                            Start class
+                        </button>
+                        <button @click="scheduleClass" class="w-full bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 rounded-lg border border-gray-400 dark:border-gray-600 transition-colors text-lg">
+                            Schedule class
+                        </button>
                     </div>
                 </div>
             </section>
-        </main>
-    </div>
-
-    <!-- Mobile Layout -->
-    <div class="lg:hidden flex flex-col min-h-screen">
-        <!-- Mobile Header with Hamburger on left -->
-        <div class="bg-white shadow-md px-4 py-3 flex items-center">
-            <button id="menuToggle" @click="toggleMobileMenu" class="text-gray-700 focus:outline-none mr-4">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                </svg>
-            </button>
-            <img src="/images/app_logo.jpg" alt="1-on-1 Quran Classes Logo" class="w-24">
         </div>
-
-        <!-- Sidebar (Hidden by default) - Slide in from left -->
-        <aside id="mobileNav" :class="{'hidden': !isMobileMenuOpen, 'translate-x-0': isMobileMenuOpen, '-translate-x-full': !isMobileMenuOpen}" class="fixed top-0 left-0 h-full w-64 bg-white shadow-lg flex-col z-50 transform transition-transform duration-300 ease-in-out">
-            <!-- Navigation -->
-            <nav class="px-4 pt-2 pb-4 flex flex-col">
-                <div class="space-y-2">
-                    <Link
-                        :href="route('teacher.index')"
-                        :class="{'bg-teal-600 text-white': isCurrentRoute('teacher.index'), 'text-gray-700 hover:bg-gray-100': !isCurrentRoute('teacher.index')}"
-                        class="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm"
-                        @click="closeMobileMenu"
-                    >
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                        </svg>
-                        Home
-                    </Link>
-                    <Link
-                        :href="route('prepre_class')"
-                        :class="{'bg-teal-600 text-white': isCurrentRoute('prepre_class'), 'text-gray-700 hover:bg-gray-100': !isCurrentRoute('prepre_class')}"
-                        class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 text-sm"
-                        @click="closeMobileMenu"
-                    >
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                        </svg>
-                        Prepare
-                    </Link>
-                    <a href="#" class="flex items-center gap-3 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-100 text-sm" @click="closeMobileMenu">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                        Students
-                    </a>
-                    <a href="#" class="flex items-center gap-3 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-100 text-sm" @click="closeMobileMenu">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                        </svg>
-                        Live class
-                    </a>
-                    <a href="#" class="flex items-center gap-3 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-100 text-sm" @click="closeMobileMenu">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        Quran Pages
-                    </a>
-                    <Link
-                        :href="route('announcement')"
-                        :class="{'bg-teal-600 text-white': isCurrentRoute('announcement'), 'text-gray-700 hover:bg-gray-100': !isCurrentRoute('announcement')}"
-                        class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 text-sm"
-                        @click="closeMobileMenu"
-                    >
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path>
-                        </svg>
-                        Announcement
-                    </Link>
-                    <a href="#" class="flex items-center gap-3 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-100 text-sm" @click="closeMobileMenu">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
-                        Settings
-                    </a>
-                </div>
-                <a href="#" class="flex items-center gap-3 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-100 text-sm mt-auto" @click="closeMobileMenu">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                    </svg>
-                    Logout
-                </a>
-            </nav>
-        </aside>
-
-        <!-- Main Content -->
-        <div class="flex-1 p-4 bg-gray-50 flex flex-col">
-            <h1 class="text-xl font-bold mb-2">Prepare my class</h1>
-
-            <h2 class="text-lg font-semibold mt-8 mb-4">Select students</h2>
-            <div class="space-y-6">
-                <div class="flex items-center justify-between">
-                    <label class="flex items-center gap-4 cursor-pointer flex-1">
-                        <input type="checkbox" class="w-5 h-5 text-teal-600 bg-white border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 checked:bg-teal-600 checked:border-teal-600" checked>
-                        <div class="flex-1">
-                            <p class="font-medium text-lg">Salmah</p>
-                            <p class="text-sm text-gray-500">13 of 114 surahs</p>
-                            <div class="w-full bg-gray-200 rounded-full h-3 mt-1">
-                                <div class="bg-teal-600 h-3 rounded-full" style="width: 11%"></div>
-                            </div>
-                            <p class="text-sm text-gray-600 mt-1">11% completed</p>
-                        </div>
-                    </label>
-                    <div class="flex items-center">
-                        <span class="flex items-center gap-2 text-green-600"><span class="w-3 h-3 bg-green-600 rounded-full"></span> Online</span>
-                    </div>
-                </div>
-                <div class="flex items-center justify-between">
-                    <label class="flex items-center gap-4 cursor-pointer flex-1">
-                        <input type="checkbox" class="w-5 h-5 text-teal-600 bg-white border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 checked:bg-teal-600 checked:border-teal-600" checked>
-                        <div class="flex-1">
-                            <p class="font-medium text-lg">Ali</p>
-                            <p class="text-sm text-gray-500">33 of 114 surahs</p>
-                            <div class="w-full bg-gray-200 rounded-full h-3 mt-1">
-                                <div class="bg-teal-600 h-3 rounded-full" style="width: 21%"></div>
-                            </div>
-                            <p class="text-sm text-gray-600 mt-1">21% completed</p>
-                        </div>
-                    </label>
-                    <div class="flex items-center">
-                        <span class="flex items-center gap-2 text-green-600"><span class="w-3 h-3 bg-green-600 rounded-full"></span> Online</span>
-                    </div>
-                </div>
-                <div class="flex items-center justify-between">
-                    <label class="flex items-center gap-4 cursor-pointer flex-1">
-                        <input type="checkbox" class="w-5 h-5 text-teal-600 bg-white border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 checked:bg-teal-600 checked:border-teal-600" checked>
-                        <div class="flex-1">
-                            <p class="font-medium text-lg">Rashad</p>
-                            <p class="text-sm text-gray-500">16 of 114 surahs</p>
-                            <div class="w-full bg-gray-200 rounded-full h-3 mt-1">
-                                <div class="bg-teal-600 h-3 rounded-full" style="width: 16%"></div>
-                            </div>
-                            <p class="text-sm text-gray-600 mt-1">16% completed</p>
-                        </div>
-                    </label>
-                    <div class="flex items-center">
-                        <span class="flex items-center gap-2 text-red-600"><span class="w-3 h-3 bg-red-600 rounded-full"></span> Offline</span>
-                    </div>
-                </div>
-            </div>
-
-            <a href="#" class="text-teal-600 font-medium flex items-center justify-center gap-2 mb-6">↓ View all</a>
-
-            <!-- Choose Surah/Quran page for mobile -->
-            <h2 class="text-lg font-semibold mt-4 mb-4">Choose Surah/Quran page</h2>
-
-            <div class="space-y-6 mb-6 flex-1">
-                <div>
-                    <label class="block text-base font-medium mb-2">Surah</label>
-                    <select class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                        <option>Surah</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-base font-medium mb-2">Page</label>
-                    <input type="text" placeholder="page" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                </div>
-
-                <div>
-                    <label class="block text-base font-medium mb-2">Title</label>
-                    <input type="text" placeholder="Suratul Waqiah" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                </div>
-
-                <div>
-                    <label class="block text-base font-medium mb-2">Notes (Optional)</label>
-                    <input type="text" placeholder="Focus on tajweed" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-base font-medium mb-2">Date</label>
-                        <input type="text" placeholder="01/01/2025" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                    </div>
-                    <div>
-                        <label class="block text-base font-medium mb-2">Time</label>
-                        <input type="time" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
-                    </div>
-                </div>
-            </div>
-
-            <div class="space-y-4">
-                <button class="w-full bg-teal-600 text-white py-4 rounded-lg font-bold">Start class</button>
-                <button class="w-full border-2 border-teal-600 text-teal-600 py-4 rounded-lg font-bold">Schedule class</button>
-            </div>
-        </div>
-    </div>
-
+    </main>
 </body>
 </template>
