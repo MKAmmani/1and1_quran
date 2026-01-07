@@ -47,10 +47,10 @@ return [
         ],
 
         'pusher' => [
-            'driver' => 'pusher',
-            'key' => env('PUSHER_APP_KEY','local'),
-            'secret' => env('PUSHER_APP_SECRET','local'),
-            'app_id' => env('PUSHER_APP_ID','local'),
+            'driver' => 'null', // Temporarily disabled to avoid Pusher errors
+            'key' => env('PUSHER_APP_KEY'),
+            'secret' => env('PUSHER_APP_SECRET'),
+            'app_id' => env('PUSHER_APP_ID'),
             'options' => [
                 'cluster' => env('PUSHER_APP_CLUSTER'),
                 'host' => env('PUSHER_HOST') ?: 'api-'.env('PUSHER_APP_CLUSTER', 'mt1').'.pusher.com',
