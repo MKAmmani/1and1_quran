@@ -1,4 +1,4 @@
-<script setup>
+t <script setup>
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import axios from 'axios'
 import client, { initZoom } from '@/zoom/client'
@@ -37,6 +37,10 @@ const token = ref(props.sessionToken)
 let mediaStream = null
 let zoomReady = false
 
+const sessionStartTime = ref(null);
+const sessionDuration = ref('00:00');
+let durationInterval = null;
+
 const surahs = ref([]);
 const selectedSurah = ref(null);
 const selectedAyah = ref(null);
@@ -67,13 +71,19 @@ const displayVerse = async () => {
     return;
   }
   try {
+    // Broadcast to other participants
     await axios.post(`/live-sessions/${props.liveSessionId}/quran-verse`, {
       surah: selectedSurah.value.id,
       ayah: selectedAyah.value,
       surah_name: selectedSurah.value.name_simple,
     });
+
+    // Immediately fetch and display for the teacher
+    const response = await axios.get(`/quran/ayahs/${selectedSurah.value.id}/${selectedAyah.value}/4`);
+    currentVerses.value = response.data.verses;
+    isQuranView.value = true;
   } catch (error) {
-    console.error('Error broadcasting verse selection:', error);
+    console.error('Error displaying verse:', error);
   }
 };
 
@@ -273,7 +283,7 @@ const endSession = async () => {
 }
 
 const handleResize = () => {
-    sidebarOpen.value = window.innerWidth >= 1024; // lg breakpoint is 1024px
+    sidebarOpen.value = window.innerWidth >= 768; // md breakpoint is 768px
 };
 
 /* ---------------- ZOOM LIFECYCLE ---------------- */
@@ -318,6 +328,17 @@ onMounted(async () => {
     await client.join(props.sessionName, token.value, props.userName)
     zoomReady = true
 
+    sessionStartTime.value = new Date();
+    durationInterval = setInterval(() => {
+      if (sessionStartTime.value) {
+        const now = new Date();
+        const diff = now - sessionStartTime.value;
+        const minutes = Math.floor(diff / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        sessionDuration.value = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
+    }, 1000);
+
     await mediaStream.startAudio()
     await mediaStream.startVideo()
 
@@ -325,50 +346,34 @@ onMounted(async () => {
 
     // Define renderVideo function here, inside onMounted
     const renderVideo = async (participant) => {
-      const userId = participant.userId || participant
-      const bVideoOn = participant.bVideoOn !== false // Default to true if not specified
-
-      if (!bVideoOn || !mediaStream) return
-
-      // Check if video player already exists
-      if (document.getElementById(`video-${userId}`)) return
-
-      try {
-        // Create video-player element
-        const player = document.createElement('video-player')
-        player.id = `video-${userId}`
-
-        // Make video player fill the container
-        player.style.width = '100%'
-        player.style.height = '100%'
-        player.style.position = 'absolute'
-        player.style.top = '0'
-        player.style.left = '0'
-
-        // Append to container first (this establishes the ancestor relationship)
-        videoContainerElement.appendChild(player)
-
-        // Now attach the video stream
-        const videoEl = await mediaStream.attachVideo(userId, 3)
-        if (videoEl) {
-          // Style the video element to fill and maintain aspect ratio
-          videoEl.style.width = '100%'
-          videoEl.style.height = '100%'
-          videoEl.style.objectFit = 'contain'
-          player.appendChild(videoEl)
+      if (participant.bVideoOn) {
+        const videoId = `video-${participant.userId}`;
+        if (!document.getElementById(videoId)) {
+            try {
+              let videoPlayerElement = document.createElement('video-player');
+              videoPlayerElement.id = videoId;
+              // Make video player fill the container
+              videoPlayerElement.style.width = '100%';
+              videoPlayerElement.style.height = '100%';
+              videoPlayerElement.style.position = 'absolute';
+              videoPlayerElement.style.top = '0';
+              videoPlayerElement.style.left = '0';
+              // Append video player to DOM first
+              videoContainerElement.appendChild(videoPlayerElement);
+              // Then attach video
+              await mediaStream.attachVideo(participant.userId, videoPlayerElement);
+              console.log(`Rendering video for user ${participant.userId}`);
+            } catch (e) {
+              console.error(`Error rendering video for user ${participant.userId}`, e);
+            }
         }
-      } catch (e) {
-        console.error(`Failed to render video for user ${userId}:`, e)
-        // Clean up on error
-        const player = document.getElementById(`video-${userId}`)
-        if (player) player.remove()
       }
-    }
+    };
 
     // Define removeVideo function here too
     const removeVideo = async (userId) => {
-      const player = document.getElementById(`video-${userId}`)
-      if (player) player.remove()
+      const videoElement = document.getElementById(`video-${userId}`)
+      if (videoElement) videoElement.remove()
 
       if (mediaStream) {
         try {
@@ -474,15 +479,18 @@ onUnmounted(async () => {
     // Clean up video container
     const cleanupVideoContainerElement = videoContainer.value || document.getElementById('video-container');
     if (cleanupVideoContainerElement) {
-      // Remove all video-player elements
-      const videoPlayers = cleanupVideoContainerElement.querySelectorAll('video-player');
-      videoPlayers.forEach(player => player.remove());
+      // Remove all video elements
+      const videos = cleanupVideoContainerElement.querySelectorAll('video');
+      videos.forEach(video => video.remove());
     }
 
     // Clean up Echo listener
     if (window.Echo) {
       window.Echo.leave(`teacher.${$page.props.auth.user.id}`)
       window.Echo.leave(`live-session.${props.liveSessionId}`)
+    }
+    if (durationInterval) {
+      clearInterval(durationInterval);
     }
   } catch {}
 })
@@ -493,72 +501,77 @@ onUnmounted(async () => {
 <template>
 
     <body
-        class="bg-background-light dark:bg-background-dark font-display text-text-primary-light dark:text-text-primary-dark antialiased h-screen overflow-hidden flex transition-colors duration-200">
-        
+        class="bg-background-light dark:bg-background-dark font-display text-text-primary-light dark:text-text-primary-dark antialiased h-screen overflow-hidden flex flex-col md:flex-row transition-colors duration-200">
+
+        <!-- Mobile Header with Hamburger Menu -->
+        <header class="md:hidden h-16 px-4 flex items-center justify-between flex-shrink-0 bg-background-light dark:bg-background-dark border-b border-border-light dark:border-border-dark z-20">
+            <button @click="sidebarOpen = true" class="p-2 rounded-lg text-text-primary-light dark:text-text-primary-dark">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+            <img src="/images/app_logo.jpg" alt="App Logo" class="h-24 w-auto" />
+            <div class="w-10"></div> <!-- Spacer for alignment -->
+        </header>
+
         <!-- Mobile Sidebar Overlay -->
-        <div v-if="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
+        <div v-if="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 md:hidden"></div>
 
         <aside
-            :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}" class="fixed lg:static lg:translate-x-0 top-0 left-0 h-full w-64 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex-shrink-0 flex flex-col overflow-y-auto z-40 transition-transform duration-300 ease-in-out">
-            <div class="p-6 flex items-center justify-center">
-                <img alt="Quran Classes Logo" class="rounded-full w-14 h-14 object-cover" src="/images/app_logo.jpg" />
+            :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}" class="fixed md:static md:translate-x-0 top-0 left-0 h-full w-64 md:w-72 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex-shrink-0 flex flex-col overflow-y-auto z-40 md:z-auto transition-transform duration-300 ease-in-out">
+            <div class="md:hidden absolute inset-0 bg-white/30 dark:bg-gray-900/30 backdrop-blur-md -z-10 md:backdrop-blur-none md:bg-surface-light dark:md:bg-surface-dark"></div>
+            <div class="p-4 md:p-8 mb-4 flex justify-center">
+                <img src="/images/app_logo.jpg" alt="App Logo" class="h-40 w-auto" />
             </div>
-            <nav class="flex-1 px-4 space-y-2 mt-4">
-                <Link :href="route('teacher.index')" :class="{'bg-primary text-white shadow-md shadow-primary/30': isCurrentRoute('teacher.index'), 'text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary': !isCurrentRoute('teacher.index')}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors">
-                    <span class="material-icons-outlined text-xl">home</span>
-                    <span class="font-medium text-sm">Home</span>
+            <nav class="flex-1 px-4 space-y-2">
+                <Link :href="route('teacher.index')" :class="{'bg-primary text-white shadow-md shadow-primary/30': isCurrentRoute('teacher.index'), 'text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary': !isCurrentRoute('teacher.index')}" class="flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200">
+                    <span class="material-symbols-outlined">home</span>
+                    <span class="font-medium">Home</span>
                 </Link>
-                <Link :href="route('prepre_class')" :class="{'bg-primary text-white shadow-md shadow-primary/30': isCurrentRoute('prepre_class'), 'text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary': !isCurrentRoute('prepre_class')}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors">
-                    <span class="material-icons-outlined text-xl">description</span>
-                    <span class="font-medium text-sm">Prepare Class</span>
+                <Link :href="route('prepre_class')" :class="{'bg-primary text-white shadow-md shadow-primary/30': isCurrentRoute('prepre_class'), 'text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary': !isCurrentRoute('prepre_class')}" class="flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200">
+                    <span class="material-symbols-outlined">edit_note</span>
+                    <span class="font-medium">Prepare Class</span>
                 </Link>
-                <a class="flex items-center gap-3 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary rounded-xl transition-colors"
-                    href="#">
-                    <span class="material-icons-outlined text-xl">people</span>
-                    <span class="font-medium text-sm">Students</span>
+                <a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" href="#">
+                    <span class="material-symbols-outlined">group</span>
+                    <span class="font-medium">Students</span>
                 </a>
-                <Link :href="route('announcement')" :class="{'bg-primary text-white shadow-md shadow-primary/30': isCurrentRoute('announcement'), 'text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary': !isCurrentRoute('announcement')}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors">
-                    <span class="material-icons-outlined text-xl">campaign</span>
-                    <span class="font-medium text-sm">Announcement</span>
+                <Link :href="route('announcement')" :class="{'bg-primary text-white shadow-md shadow-primary/30': isCurrentRoute('announcement'), 'text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary': !isCurrentRoute('announcement')}" class="flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200">
+                    <span class="material-symbols-outlined">campaign</span>
+                    <span class="font-medium">Announcement</span>
                 </Link>
-                <Link :href="route('live')" :class="{'bg-primary text-white shadow-md shadow-primary/30': isCurrentRoute('live'), 'text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary': !isCurrentRoute('live')}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors">
-                    <span class="material-icons-outlined text-xl">videocam</span>
-                    <span class="font-medium text-sm">Live class</span>
+                <Link :href="route('live')" :class="{'bg-primary text-white shadow-md shadow-primary/30': isCurrentRoute('live'), 'text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary': !isCurrentRoute('live')}" class="flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200">
+                    <span class="material-symbols-outlined">videocam</span>
+                    <span class="font-medium">Live class</span>
                 </Link>
-                <a class="flex items-center gap-3 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary rounded-xl transition-colors"
-                    href="#">
-                    <span class="material-icons-outlined text-xl">library_books</span>
-                    <span class="font-medium text-sm">Quran library</span>
+                <a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" href="#">
+                    <span class="material-symbols-outlined">book_2</span>
+                    <span class="font-medium">Quran library</span>
                 </a>
-                <a class="flex items-center gap-3 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary rounded-xl transition-colors"
-                    href="#">
-                    <span class="material-icons-outlined text-xl">history</span>
-                    <span class="font-medium text-sm">Class history</span>
+                <a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" href="#">
+                    <span class="material-symbols-outlined">history_edu</span>
+                    <span class="font-medium">Class history</span>
                 </a>
 
             </nav>
-            <div class="px-4 pb-6 mt-auto space-y-2">
-                <Link :href="route('profile.edit')" :class="{'bg-primary text-white shadow-md shadow-primary/30': isCurrentRoute('profile.edit'), 'text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary': !isCurrentRoute('profile.edit')}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors">
-                    <span class="material-icons-outlined text-xl">settings</span>
-                    <span class="font-medium text-sm">Settings</span>
+            <div class="p-4 mt-auto">
+                <Link :href="route('profile.edit')" :class="{'bg-primary text-white shadow-md shadow-primary/30': isCurrentRoute('profile.edit'), 'text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary': !isCurrentRoute('profile.edit')}" class="flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span class="font-medium">Settings</span>
                 </Link>
-                <button @click="logout" class="w-full flex items-center gap-3 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary rounded-xl transition-colors">
-                    <span class="material-icons-outlined text-xl">logout</span>
-                    <span class="font-medium text-sm">Logout</span>
-                </button>
+            </div>
+            <div class="p-4">
+                <Link :href="route('logout')" method="post" as="button" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-logout-bg dark:bg-red-900/30 text-logout-text dark:text-red-400 font-medium hover:opacity-90 transition-all duration-200">
+                    <span class="material-symbols-outlined transform rotate-180">logout</span>
+                    <span>Logout</span>
+                </Link>
             </div>
         </aside>
-        <main class="flex-1 flex flex-col h-full overflow-hidden relative">
-            <header
-                class="h-20 flex items-center justify-between px-8 bg-background-light dark:bg-background-dark shrink-0">
-                <div class="flex items-center gap-4">
-                    <button @click="sidebarOpen = true" class="lg:hidden p-2 rounded-lg text-text-light dark:text-text-dark">
-                        <span class="material-icons">menu</span>
-                    </button>
-                    <div class="flex flex-col">
-                        <h2 class="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark">Assalaikum
-                            Alaykum, {{ userName }}</h2>
-                    </div>
+        <main class="flex-1 flex flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark relative">
+            <header class="h-16 md:h-20 px-4 flex items-center justify-between flex-shrink-0 bg-background-light dark:bg-background-dark z-10 border-b md:border-b-0 border-border-light dark:border-border-dark">
+                <div class="hidden md:block">
+                    <h2 class="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark">Assalaikum Alaykum, {{ userName }}</h2>
+                </div>
+                <div class="md:hidden text-base font-semibold text-text-primary-light dark:text-text-primary-dark">
+                    Live Class
                 </div>
                 <div class="flex items-center gap-6">
                     <div class="flex flex-col items-end">
@@ -580,7 +593,7 @@ onUnmounted(async () => {
                     </button>
                 </div>
             </header>
-            <div class="flex-1 flex overflow-hidden p-6 gap-6 pt-0">
+            <div class="flex-1 flex overflow-hidden px-4 py-6 md:p-6 gap-6 pt-0">
                 <div class="flex-1 flex flex-col min-w-0 h-full gap-6">
                     <div
                         class="bg-surface-light dark:bg-surface-dark rounded-2xl p-4 shadow-sm border border-border-light dark:border-border-dark flex items-center justify-between flex-wrap gap-4 shrink-0">
@@ -604,7 +617,7 @@ onUnmounted(async () => {
                             </div>
                             <div
                                 class="bg-gray-100 dark:bg-gray-700 text-text-primary-light dark:text-text-primary-dark font-mono px-4 py-1.5 rounded-lg text-sm border border-border-light dark:border-border-dark">
-                                06:09
+                                {{ sessionDuration }}
                             </div>
                             <button @click="endSession"
                                 class="bg-[#EB5757] hover:bg-red-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
@@ -618,6 +631,11 @@ onUnmounted(async () => {
                             class="flex-1 relative bg-[#FDFDFD] dark:bg-[#252525] flex items-center justify-center p-4 overflow-auto">
                             <div v-if="isQuranView" class="max-w-4xl w-full h-full flex flex-col items-center justify-center relative text-center">
                                 <div v-if="currentVerses && currentVerses.length > 0" class="w-full h-full overflow-y-auto space-y-6 p-4">
+                                    <div v-if="currentVerses[0].verse_number === 1 && selectedSurah.id !== 9" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                                        <p class="text-3xl font-arabic leading-loose mb-4 text-right" dir="rtl" style="font-family: 'Amiri', 'Noto Sans Arabic', 'Tajawal', serif;">
+                                            بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+                                        </p>
+                                    </div>
                                     <div v-for="verse in currentVerses" :key="verse.id" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                                         <div class="flex items-center justify-center mb-4">
                                             <span class="bg-primary-hover text-white px-3 py-1 rounded-full text-sm font-medium">
@@ -636,9 +654,8 @@ onUnmounted(async () => {
                             </div>
                             <div v-else class="max-w-4xl w-full h-full flex items-center justify-center relative">
                                 <!-- Video container for Zoom SDK -->
-                                <div id="video-container" ref="videoContainer"
-                                class="w-full h-full flex items-center justify-center bg-black rounded-lg video-player-container" style="z-index: 1;">
-                                </div>
+                                <video-player-container id="video-container" class="w-full h-full flex items-center justify-center bg-black rounded-lg" style="z-index: 1;">
+                                </video-player-container>
 
                                 <!-- Controls overlay -->
                                 <div
@@ -662,22 +679,22 @@ onUnmounted(async () => {
                             </div>
                         </div>
                         <div
-                            class="h-16 border-t border-border-light dark:border-border-dark flex items-center justify-between px-6 bg-surface-light dark:bg-surface-dark">
+                            class="h-auto md:h-16 border-t border-border-light dark:border-border-dark flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 md:py-0 gap-4 md:gap-0 bg-surface-light dark:bg-surface-dark">
                             <button v-if="isQuranView" @click="switchToVideoView"
-                                class="bg-primary hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                class="w-full md:w-auto bg-primary hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                                 Show Video
                             </button>
                             <button v-else
                                 @click="isQuranView = true"
-                                class="bg-primary hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                class="w-full md:w-auto bg-primary hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                                 Full Quran View
                             </button>
-                            <div class="flex items-center gap-2">
-                                <div class="relative">
+                            <div class="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto">
+                                <div class="relative w-full md:w-48">
                                     <select
                                         v-model="selectedSurah"
                                         @change="isSurahDropdownOpen = false"
-                                        class="flex items-center px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm w-48 appearance-none"
+                                        class="flex items-center px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm w-full appearance-none"
                                     >
                                         <option :value="null" disabled>Select Surah</option>
                                         <option
@@ -692,8 +709,8 @@ onUnmounted(async () => {
                                         <span class="material-icons text-sm">expand_more</span>
                                     </div>
                                 </div>
-                                <div class="relative" v-if="selectedSurah">
-                                     <select v-model="selectedAyah" class="flex items-center gap-10 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm">
+                                <div class="relative w-full md:w-auto" v-if="selectedSurah">
+                                      <select v-model="selectedAyah" class="flex items-center px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm w-full md:w-auto">
                                         <option :value="null" disabled>Select Ayah</option>
                                         <option v-for="ayah in selectedSurah.verses_count" :key="ayah" :value="ayah">
                                             {{ ayah }}
@@ -701,7 +718,7 @@ onUnmounted(async () => {
                                     </select>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-4">
+                            <div class="flex items-center justify-center gap-4 w-full md:w-auto">
                                 <div class="flex flex-col items-center cursor-pointer group">
                                   <button
                                       @click="displayPreviousVerses"
@@ -746,9 +763,12 @@ onUnmounted(async () => {
                         <div v-for="message in messages" :key="message.id" class="flex flex-col gap-1">
                             <div class="flex items-start gap-2" v-if="message.user_id != $page.props.auth.user.id">
                                 <img :alt="message.user?.name || 'User'" class="w-8 h-8 rounded-full object-cover"
-                                    :src="message.user?.avatar || `https://ui-avatars.com/api/?name=${message.user?.name || 'User'}&color=fff&background=5cb65f`" />
+                                    :src="message.user?.avatar || `https://ui-avatars.com/api/?name=${message.user?.first_name?.[0]}${message.user?.last_name?.[0] || (message.user?.name || 'U')}&color=fff&background=5cb65f`" />
                                 <div class="flex flex-col max-w-[85%]">
-                                    <span class="text-xs font-semibold mb-0.5">{{ message.user?.name || 'Unknown User' }}</span>
+                                    <span class="text-xs font-semibold mb-0.5">
+                                        {{ message.user?.first_name && message.user?.last_name ? `${message.user.first_name} ${message.user.last_name}` : (message.user?.name || 'Unknown User') }}
+                                        <small class="text-[10px] opacity-75">({{ message.user?.role || 'User' }})</small>
+                                    </span>
                                     <div
                                         class="bg-gray-100 dark:bg-gray-800 p-3 rounded-tr-xl rounded-br-xl rounded-bl-xl text-sm text-text-primary-light dark:text-text-primary-dark">
                                         {{ message.message }}
@@ -813,21 +833,7 @@ onUnmounted(async () => {
                 <span class="material-icons-outlined text-2xl">chat</span>
             </button>
         </div>
-        <div
-            class="lg:hidden fixed bottom-0 w-full bg-surface-light dark:bg-surface-dark border-t border-border-light dark:border-border-dark flex justify-around py-3 z-50">
-            <a class="flex flex-col items-center text-primary" href="#">
-                <span class="material-icons-outlined">videocam</span>
-                <span class="text-[10px] mt-1">Live</span>
-            </a>
-            <a class="flex flex-col items-center text-text-secondary-light dark:text-text-secondary-dark" href="#">
-                <span class="material-icons-outlined">home</span>
-                <span class="text-[10px] mt-1">Home</span>
-            </a>
-            <a class="flex flex-col items-center text-text-secondary-light dark:text-text-secondary-dark" href="#">
-                <span class="material-icons-outlined">chat</span>
-                <span class="text-[10px] mt-1">Chat</span>
-            </a>
-        </div>
+      
 
     </body>
 </template>

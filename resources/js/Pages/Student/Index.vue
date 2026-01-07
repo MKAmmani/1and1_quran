@@ -49,6 +49,7 @@ onMounted(() => {
 
         window.Echo.private(channelName)
             .listen('.join.request.approved', (e) => {
+                alert('Join request approved event received! The student should now be redirected.');
                 console.log('Join request approved event received:', e);
                 router.visit(route('live-session.join', e.joinRequest.live_session_id));
             });
@@ -133,7 +134,8 @@ onBeforeUnmount(() => {
                     <div v-for="session in liveSessions" :key="session.id" class="flex flex-col items-center">
                         <button @click="requestToJoin(session.id)" class="bg-primary hover:bg-secondary text-white px-8 py-3 rounded-lg font-medium shadow-sm transition-all flex items-center gap-2 whitespace-nowrap">
                             <span class="material-icons">person_add</span>
-                            Request to Join Class - {{ session.title }}
+                            <!--Request to Join Class - {{ session.title }} -->
+                            Request to Join Class
                         </button>
                         <p class="text-sm text-gray-600 mt-2">Teacher: {{ session.teacher?.first_name }} {{ session.teacher?.last_name }}</p>
                     </div>

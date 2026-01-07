@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import axios from 'axios';
 import { router, usePage } from '@inertiajs/vue3';
 import client, { initZoom } from '@/zoom/client';
@@ -13,6 +13,7 @@ const props = defineProps({
 });
 
 // Reactive variables
+const sidebarOpen = ref(false);
 const isChatOpen = ref(false); // Start with chat closed by default
 const messages = ref([]);
 const newMessage = ref('');
@@ -25,8 +26,13 @@ const currentVerses = ref([]);
 const isQuranView = ref(false);
 const selectedSurah = ref(null);
 const selectedAyah = ref(null);
+const selectedSurahId = ref(null);
 
 let mediaStream = null;
+
+const sessionStartTime = ref(null);
+const sessionDuration = ref('00:00');
+let durationInterval = null;
 
 // Sync participants with Zoom client
 const syncParticipants = () => {
@@ -81,21 +87,16 @@ const renderSelfVideo = async () => {
   const videoId = `video-${selfId}`;
   if (!document.getElementById(videoId)) {
     try {
-      let videoPlayerElement = document.createElement('video-player');
-      let videoElement = await mediaStream.attachVideo(selfId, 3);
-      videoPlayerElement.id = videoId;
-      // Make video player fill the container
-      videoPlayerElement.style.width = '100%';
-      videoPlayerElement.style.height = '100%';
-      videoPlayerElement.style.position = 'absolute';
-      videoPlayerElement.style.top = '0';
-      videoPlayerElement.style.left = '0';
+      let videoElement = document.createElement('video');
+      videoElement.id = videoId;
+      // Append video element to DOM
+      videoContainer.appendChild(videoElement);
+      // Then attach video
+      await mediaStream.attachVideo(selfId, videoElement);
       // Style the video element to fill and maintain aspect ratio
       videoElement.style.width = '100%';
       videoElement.style.height = '100%';
       videoElement.style.objectFit = 'contain';
-      videoPlayerElement.appendChild(videoElement);
-      videoContainer.appendChild(videoPlayerElement);
       console.log(`Rendering self video for user ${selfId}`);
     } catch (e) {
       console.error(`Error rendering self video for user ${selfId}`, e);
@@ -250,7 +251,14 @@ const leaveSession = async () => {
 
 const canvas = ref(null);
 
+const handleResize = () => {
+    sidebarOpen.value = window.innerWidth >= 768; // md breakpoint is 768px
+};
+
 onMounted(async () => {
+    // Always fetch surahs if needed, but not here
+    handleResize();
+    window.addEventListener('resize', handleResize);
   console.log('Join.vue props:', props);
   const videoContainer = document.getElementById('video-container');
 
@@ -268,6 +276,17 @@ onMounted(async () => {
     await client.join(props.sessionName, token.value, props.userName);
     console.log('Joined Zoom session successfully!');
 
+    sessionStartTime.value = new Date();
+    durationInterval = setInterval(() => {
+      if (sessionStartTime.value) {
+        const now = new Date();
+        const diff = now - sessionStartTime.value;
+        const minutes = Math.floor(diff / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        sessionDuration.value = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
+    }, 1000);
+
     mediaStream = client.getMediaStream();
 
     // Start local audio
@@ -279,21 +298,16 @@ onMounted(async () => {
         const videoId = `video-${participant.userId}`;
         if (!document.getElementById(videoId)) {
             try {
-              let videoPlayerElement = document.createElement('video-player');
-              let videoElement = await mediaStream.attachVideo(participant.userId, 3);
-              videoPlayerElement.id = videoId;
-              // Make video player fill the container
-              videoPlayerElement.style.width = '100%';
-              videoPlayerElement.style.height = '100%';
-              videoPlayerElement.style.position = 'absolute';
-              videoPlayerElement.style.top = '0';
-              videoPlayerElement.style.left = '0';
+              let videoElement = document.createElement('video');
+              videoElement.id = videoId;
+              // Append video element to DOM
+              videoContainer.appendChild(videoElement);
+              // Then attach video
+              await mediaStream.attachVideo(participant.userId, videoElement);
               // Style the video element to fill and maintain aspect ratio
               videoElement.style.width = '100%';
               videoElement.style.height = '100%';
               videoElement.style.objectFit = 'contain';
-              videoPlayerElement.appendChild(videoElement);
-              videoContainer.appendChild(videoPlayerElement);
               console.log(`Rendering video for user ${participant.userId}`);
             } catch (e) {
               console.error(`Error rendering video for user ${participant.userId}`, e);
@@ -309,7 +323,13 @@ onMounted(async () => {
         videoElement.remove();
         console.log(`Removed video for user ${userId}`);
       }
-      await mediaStream.detachVideo(userId);
+      if (mediaStream) {
+        try {
+          await mediaStream.detachVideo(userId);
+        } catch (e) {
+          console.error('Error detaching video:', e);
+        }
+      }
     };
 
     // Render videos for participants already in the session
@@ -364,6 +384,7 @@ onMounted(async () => {
     console.log('Initial messages fetched.');
 
     if (window.Echo) {
+      console.log('Setting up Echo listener for live-session.' + props.liveSession.id);
       echoListener = window.Echo.private(`live-session.${props.liveSession.id}`)
         .listen('.chat.message', (e) => {
           const messageExists = messages.value.some(msg => msg.id === e.chatMessage.id);
@@ -382,11 +403,13 @@ onMounted(async () => {
             console.log('Received Quran verse change event:', e);
             try {
                 const response = await axios.get(`/quran/ayahs/${e.surah}/${e.ayah}/4`);
-                console.log('Quran API response received');
+                console.log('Quran API response received:', response.data);
                 currentVerses.value = response.data.verses;
+                selectedSurahId.value = e.surah;
                 selectedSurah.value = e.surahName;
                 selectedAyah.value = e.ayah;
                 isQuranView.value = true;
+                console.log('Quran view set to true, verses:', currentVerses.value);
             } catch (error) {
                 console.error('Error fetching verses:', error);
             }
@@ -403,12 +426,16 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
   // Clean up the Echo listener and token refresh interval
   if (window.Echo && props.liveSession?.id) {
     window.Echo.leave(`live-session.${props.liveSession.id}`);
   }
   if (refreshTokenInterval) {
     clearInterval(refreshTokenInterval);
+  }
+  if (durationInterval) {
+    clearInterval(durationInterval);
   }
   if (client) {
     client.leave();
@@ -418,62 +445,77 @@ onUnmounted(() => {
 
 <template>
   <body
-      class="bg-background-light dark:bg-background-dark font-display text-text-primary-light dark:text-text-primary-dark antialiased h-screen overflow-hidden flex transition-colors duration-200">
+      class="bg-background-light dark:bg-background-dark font-display text-text-primary-light dark:text-text-primary-dark antialiased h-screen overflow-hidden flex flex-col md:flex-row transition-colors duration-200">
+
+    <!-- Mobile Header with Hamburger Menu -->
+    <header class="md:hidden h-16 px-4 flex items-center justify-between flex-shrink-0 bg-background-light dark:bg-background-dark border-b border-border-light dark:border-border-dark z-20">
+        <button @click="sidebarOpen = true" class="p-2 rounded-lg text-text-primary-light dark:text-text-primary-dark">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+        <img src="/images/app_logo.jpg" alt="App Logo" class="h-24 w-auto" />
+        <div class="w-10"></div> <!-- Spacer for alignment -->
+    </header>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div v-if="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 md:hidden"></div>
+
     <aside
-        class="w-64 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex-shrink-0 flex flex-col h-full overflow-y-auto hidden lg:flex">
-      <div class="p-6 flex items-center justify-center">
-        <img alt="Quran Classes Logo" class="rounded-full w-14 h-14 object-cover" src="/images/app_logo.jpg" />
+        :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}" class="fixed md:static md:translate-x-0 top-0 left-0 h-full w-64 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex-shrink-0 flex flex-col overflow-y-auto z-40 md:z-auto transition-transform duration-300 ease-in-out">
+        <div class="md:hidden absolute inset-0 bg-white/30 dark:bg-gray-900/30 backdrop-blur-md -z-10 md:backdrop-blur-none md:bg-surface-light dark:md:bg-surface-dark"></div>
+      <div class="p-4 md:p-8 mb-4 flex justify-center">
+        <img src="/images/app_logo.jpg" alt="App Logo" class="h-40 w-auto" />
       </div>
-      <nav class="flex-1 px-4 space-y-2 mt-4">
-        <a href="#" class="flex items-center gap-3 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary rounded-xl transition-colors">
-          <span class="material-icons-outlined text-xl">home</span>
-          <span class="font-medium text-sm">Home</span>
+      <nav class="flex-1 px-4 space-y-2">
+        <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200">
+          <span class="material-symbols-outlined">home</span>
+          <span class="font-medium">Home</span>
         </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary rounded-xl transition-colors">
-          <span class="material-icons-outlined text-xl">description</span>
-          <span class="font-medium text-sm">Prepare Class</span>
+        <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200">
+          <span class="material-symbols-outlined">edit_note</span>
+          <span class="font-medium">Prepare Class</span>
         </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary rounded-xl transition-colors"
-            >
-          <span class="material-icons-outlined text-xl">people</span>
-          <span class="font-medium text-sm">Students</span>
+        <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200">
+          <span class="material-symbols-outlined">group</span>
+          <span class="font-medium">Students</span>
         </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary rounded-xl transition-colors">
-          <span class="material-icons-outlined text-xl">campaign</span>
-          <span class="font-medium text-sm">Announcement</span>
+        <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200">
+          <span class="material-symbols-outlined">campaign</span>
+          <span class="font-medium">Announcement</span>
         </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary rounded-xl transition-colors">
-          <span class="material-icons-outlined text-xl">videocam</span>
-          <span class="font-medium text-sm">Live class</span>
+        <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200">
+          <span class="material-symbols-outlined">videocam</span>
+          <span class="font-medium">Live class</span>
         </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary rounded-xl transition-colors"
-            >
-          <span class="material-icons-outlined text-xl">library_books</span>
-          <span class="font-medium text-sm">Quran library</span>
+        <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200">
+          <span class="material-symbols-outlined">book_2</span>
+          <span class="font-medium">Quran library</span>
         </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary rounded-xl transition-colors"
-            >
-          <span class="material-icons-outlined text-xl">history</span>
-          <span class="font-medium text-sm">Class history</span>
+        <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200">
+          <span class="material-symbols-outlined">history_edu</span>
+          <span class="font-medium">Class history</span>
         </a>
       </nav>
-      <div class="px-4 pb-6 mt-auto space-y-2">
-        <a href="#" class="flex items-center gap-3 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary rounded-xl transition-colors">
-          <span class="material-icons-outlined text-xl">settings</span>
-          <span class="font-medium text-sm">Settings</span>
+      <div class="p-4 mt-auto">
+        <a href="#" class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200">
+          <span class="material-symbols-outlined">settings</span>
+          <span class="font-medium">Settings</span>
         </a>
-        <button @click="logout" class="w-full flex items-center gap-3 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-opacity-10 hover:text-primary rounded-xl transition-colors">
-          <span class="material-icons-outlined text-xl">logout</span>
-          <span class="font-medium text-sm">Logout</span>
+      </div>
+      <div class="p-4">
+        <button @click="logout" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-logout-bg dark:bg-red-900/30 text-logout-text dark:text-red-400 font-medium hover:opacity-90 transition-all duration-200">
+          <span class="material-symbols-outlined transform rotate-180">logout</span>
+          <span>Logout</span>
         </button>
       </div>
     </aside>
-    <main class="flex-1 flex flex-col h-full overflow-hidden relative">
-      <header
-          class="h-20 flex items-center justify-between px-8 bg-background-light dark:bg-background-dark shrink-0">
-        <div class="flex flex-col">
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark relative">
+      <header class="h-16 md:h-20 px-4 flex items-center justify-between flex-shrink-0 bg-background-light dark:bg-background-dark z-10 border-b md:border-b-0 border-border-light dark:border-border-dark">
+        <div class="hidden md:block">
           <h2 class="text-xl font-semibold text-text-primary-light dark:text-text-primary-dark">Live Quran Class</h2>
           <p class="text-sm text-text-secondary-light dark:text-text-secondary-dark">{{ liveSession.title }}</p>
+        </div>
+        <div class="md:hidden text-base font-semibold text-text-primary-light dark:text-text-primary-dark">
+          Live Class
         </div>
         <div class="flex items-center gap-6">
           <div class="flex flex-col items-end">
@@ -491,7 +533,7 @@ onUnmounted(() => {
           </div>
         </div>
       </header>
-      <div class="flex-1 flex overflow-hidden p-6 gap-6 pt-0">
+      <div class="flex-1 flex overflow-hidden px-4 py-6 md:p-6 gap-6 pt-0">
         <div class="flex-1 flex flex-col min-w-0 h-full gap-6">
           <div
               class="bg-surface-light dark:bg-surface-dark rounded-2xl p-4 shadow-sm border border-border-light dark:border-border-dark flex items-center justify-between flex-wrap gap-4 shrink-0">
@@ -522,7 +564,7 @@ onUnmounted(() => {
               </div>
               <div
                   class="bg-gray-100 dark:bg-gray-700 text-text-primary-light dark:text-text-primary-dark font-mono px-4 py-1.5 rounded-lg text-sm border border-border-light dark:border-border-dark">
-                {{ new Date().toLocaleTimeString() }}
+                {{ sessionDuration }}
               </div>
               <button @click="leaveSession"
                   class="bg-[#EB5757] hover:bg-red-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
@@ -536,6 +578,11 @@ onUnmounted(() => {
                 class="flex-1 relative bg-[#FDFDFD] dark:bg-[#252525] flex items-center justify-center p-4 overflow-auto">
                 <div v-if="isQuranView" class="max-w-4xl w-full h-full flex flex-col items-center justify-center relative text-center">
                     <div v-if="currentVerses && currentVerses.length > 0" class="w-full h-full overflow-y-auto space-y-6 p-4">
+                        <div v-if="currentVerses[0].verse_number === 1 && selectedSurahId !== 9" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                            <p class="text-3xl font-arabic leading-loose mb-4 text-right" dir="rtl" style="font-family: 'Amiri', 'Noto Sans Arabic', 'Tajawal', serif;">
+                                بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+                            </p>
+                        </div>
                         <div v-for="verse in currentVerses" :key="verse.id" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                             <div class="flex items-center justify-center mb-4">
                                 <span class="bg-primary text-white px-3 py-1 rounded-full text-sm font-medium">
@@ -554,7 +601,7 @@ onUnmounted(() => {
                 </div>
               <div v-else class="max-w-4xl w-full h-full flex items-center justify-center relative">
                 <!-- Video container for Zoom SDK -->
-                <div id="video-container" class="w-full h-full flex items-center justify-center bg-black rounded-lg video-player-container" style="z-index: 1;"></div>
+                <div id="video-container" class="video-player-container w-full h-full flex items-center justify-center bg-black rounded-lg" style="z-index: 1;"></div>
                 <div
                     class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full z-10">
                   <button @click="toggleScreenShare" class="text-white hover:text-primary transition-colors p-2">
@@ -573,20 +620,19 @@ onUnmounted(() => {
               </div>
             </div>
             <div
-                class="h-16 border-t border-border-light dark:border-border-dark flex items-center justify-between px-6 bg-surface-light dark:bg-surface-dark">
+                class="h-auto md:h-16 border-t border-border-light dark:border-border-dark flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 md:py-0 gap-4 md:gap-0 bg-surface-light dark:bg-surface-dark">
               <button
-                  class="bg-primary hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                  class="w-full md:w-auto bg-primary hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                 Full quran view
               </button>
-              <div class="relative">
+              <div class="relative w-full md:w-auto">
                 <button
-                    class="flex items-center gap-10 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm">
-                  <span class="text-text-secondary-light dark:text-text-secondary-dark">Select
-                      surah</span>
+                    class="flex items-center justify-center gap-2 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-sm w-full">
+                  <span class="text-text-secondary-light dark:text-text-secondary-dark">Select surah</span>
                   <span class="material-icons-outlined text-lg">expand_more</span>
                 </button>
               </div>
-              <div class="flex items-center gap-4">
+              <div class="flex items-center justify-center gap-4 w-full md:w-auto">
                 <div class="flex flex-col items-center cursor-pointer group">
                   <button
                       class="w-10 h-10 bg-primary/10 dark:bg-primary/20 text-primary flex items-center justify-center rounded-lg group-hover:bg-primary group-hover:text-white transition-colors">
@@ -623,9 +669,12 @@ onUnmounted(() => {
             <div v-for="message in messages" :key="message.id" class="flex flex-col gap-1">
               <div class="flex items-start gap-2" v-if="message.user_id != $page.props.auth.user.id">
                 <img :alt="message.user?.name || 'User'" class="w-8 h-8 rounded-full object-cover"
-                    :src="message.user?.avatar || `https://ui-avatars.com/api/?name=${message.user?.name || 'User'}&color=fff&background=5cb65f`" />
+                    :src="message.user?.avatar || `https://ui-avatars.com/api/?name=${message.user?.first_name?.[0]}${message.user?.last_name?.[0] || (message.user?.name || 'U')}&color=fff&background=5cb65f`" />
                 <div class="flex flex-col max-w-[85%]">
-                  <span class="text-xs font-semibold mb-0.5">{{ message.user?.name || 'Unknown User' }}</span>
+                  <span class="text-xs font-semibold mb-0.5">
+                    {{ message.user?.first_name && message.user?.last_name ? `${message.user.first_name} ${message.user.last_name}` : (message.user?.name || 'Unknown User') }}
+                    <small class="text-[10px] opacity-75">({{ message.user?.role || 'User' }})</small>
+                  </span>
                   <div
                       class="bg-gray-100 dark:bg-gray-800 p-3 rounded-tr-xl rounded-br-xl rounded-bl-xl text-sm text-text-primary-light dark:text-text-primary-dark">
                     {{ message.message }}
