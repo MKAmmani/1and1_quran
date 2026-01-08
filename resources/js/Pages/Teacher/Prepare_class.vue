@@ -126,7 +126,7 @@ onUnmounted(() => {
                 <span class="material-icons-outlined">auto_stories</span>
                 <span class="font-medium">Quran library</span>
             </Link>
-            <Link :href="route('teacher.history')" :class="{'bg-primary text-white shadow-md': isCurrentRoute('teacher.history'), 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 group': !isCurrentRoute('teacher.history')}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors">
+            <Link :href="route('class.history')" :class="{'bg-primary text-white shadow-md': isCurrentRoute('teacher.history'), 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 group': !isCurrentRoute('teacher.history')}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors">
                 <span class="material-icons-outlined">history_edu</span>
                 <span class="font-medium">Class history</span>
             </Link>

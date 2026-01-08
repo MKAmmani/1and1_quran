@@ -281,7 +281,7 @@ onBeforeUnmount(() => {
             <div class="md:hidden absolute inset-0 bg-white/30 dark:bg-gray-900/30 backdrop-blur-md -z-10 md:backdrop-blur-none md:bg-surface-light dark:md:bg-surface-dark"></div>
             <div class="p-6 flex justify-center items-center">
                 <div class="relative flex items-center justify-center w-[186px] h-[122px]">
-                    <img alt="1-on-1 Quran Classes Logo" class="object-contain h-24 w-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2GccdOXd8F0wAWHy8VMgqTjnmXj_L8491ObQTH3eTW2AkpvSMmNonjVejGPzDMaRasIU2Ne7rn6u0yYFq19RoVzrR6iZCI57eyPYmH71NZ8tNRXkdBrjj-o3nI9C6zeqdPVAfWY--g4HZZ3YUVsR4pIMxgRoS2pMB_SR3yHFjbATSOcUhgqzGsAhfttLbd0tn-p5aCTEm-p-_ma6r3raniZZhBIG6XNwxDRHrREizRcdk7cy5vl25lqx2rKNwxC-3BX5zEltVys4" />
+                    <img alt="1-on-1 Quran Classes Logo" class="object-contain h-24 w-auto" src="/images/app_logo.jpg" />
                 </div>
             </div>
             <nav class="flex-1 px-4 space-y-2 mt-4">

@@ -107,7 +107,7 @@ const currentDate = computed(() => {
                     <span class="material-icons-outlined text-xl w-8">menu_book</span>
                     <span class="font-medium">Quran library</span>
                 </Link>
-                <Link :href="route('teacher.history')" class="sidebar-item flex items-center px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg group">
+                <Link :href="route('class.history')" class="sidebar-item flex items-center px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg group">
                     <span class="material-icons-outlined text-xl w-8">history</span>
                     <span class="font-medium">Class history</span>
                 </Link>
