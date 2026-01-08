@@ -293,22 +293,26 @@ onBeforeUnmount(() => {
                     <span class="material-symbols-outlined">edit_note</span>
                     <span class="font-medium">Prepare Class</span>
                 </Link>
-                <a class="flex items-center gap-4 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary rounded-lg transition-all duration-200" href="#">
+                <a class="flex items-center gap-4 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary rounded-lg transition-all duration-200" :href="route('teacher.students')">
                     <span class="material-symbols-outlined">group</span>
                     <span class="font-medium">Students</span>
                 </a>
+                <Link class="flex items-center gap-4 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary rounded-lg transition-all duration-200" :href="route('announcement')">
+                    <span class="material-symbols-outlined">campaign</span>
+                    <span class="font-medium">Announcement</span>
+                </Link>
                 <Link :href="route('live')" :class="{'bg-primary text-white shadow-md shadow-primary/30': isCurrentRoute('live'), 'text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary': !isCurrentRoute('live')}" class="flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200">
                     <span class="material-symbols-outlined">videocam</span>
                     <span class="font-medium">Live class</span>
                 </Link>
-                <a class="flex items-center gap-4 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary rounded-lg transition-all duration-200" href="#">
+                <Link class="flex items-center gap-4 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary rounded-lg transition-all duration-200" :href="route('quran.surahs')">
                     <span class="material-symbols-outlined">book_2</span>
                     <span class="font-medium">Quran library</span>
-                </a>
-                <a class="flex items-center gap-4 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary rounded-lg transition-all duration-200" href="#">
+                </Link>
+                <Link class="flex items-center gap-4 px-4 py-3 text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary rounded-lg transition-all duration-200" :href="route('class.history')">
                     <span class="material-symbols-outlined">history_edu</span>
                     <span class="font-medium">Class history</span>
-                </a>
+                </Link>
             </nav>
             <div class="p-4 mt-auto border-t border-gray-100 dark:border-gray-800 space-y-2">
                 <Link :href="route('profile.edit')" :class="{'bg-primary text-white shadow-md shadow-primary/30': isCurrentRoute('profile.edit'), 'text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary': !isCurrentRoute('profile.edit')}" class="flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200">

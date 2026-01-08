@@ -26,7 +26,7 @@ Route::get('/dashboard', function () {
 
 Route::get('/class/history', [TeacherController::class, 'history'])
     ->middleware(['auth', 'verified', 'role:' . UserRole::Teacher->value])
-    ->name('teacher.history');
+    ->name('class.history');
 
 
 

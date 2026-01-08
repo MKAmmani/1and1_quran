@@ -107,7 +107,7 @@ onBeforeUnmount(() => {
                     <span class="material-icons-outlined mr-3 text-gray-500 dark:text-gray-400 group-hover:text-primary">library_books</span>
                     Quran library
                 </Link>
-                <Link :href="route('teacher.history')" :class="{'bg-primary text-white': isCurrentRoute('teacher.history'), 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800': !isCurrentRoute('teacher.history')}" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg group transition-colors">
+                <Link :href="route('class.history')" :class="{'bg-primary text-white': isCurrentRoute('teacher.history'), 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800': !isCurrentRoute('teacher.history')}" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg group transition-colors">
                     <span class="material-icons-outlined mr-3 text-gray-500 dark:text-gray-400 group-hover:text-primary">history</span>
                     Class history
                 </Link>
