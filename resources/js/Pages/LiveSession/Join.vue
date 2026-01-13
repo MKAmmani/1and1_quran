@@ -82,21 +82,50 @@ const toggleScreenShare = async () => {
 
 const renderSelfVideo = async () => {
   const selfId = client.getCurrentUserInfo().userId;
-  const selfParticipant = { userId: selfId, bVideoOn: true };
   const videoContainer = document.getElementById('video-container');
   const videoId = `video-${selfId}`;
+  const wrapperId = `wrapper-${selfId}`;
+
   if (!document.getElementById(videoId)) {
     try {
+      // Create a wrapper div for better layout control
+      const videoWrapper = document.createElement('div');
+      videoWrapper.id = wrapperId;
+      videoWrapper.style.flex = '1 1 auto';
+      videoWrapper.style.position = 'relative';
+      videoWrapper.style.margin = '2px';
+      videoWrapper.style.minWidth = '200px';
+      videoWrapper.style.minHeight = '150px';
+      videoWrapper.style.maxWidth = '300px';
+      videoWrapper.style.display = 'flex';
+      videoWrapper.style.alignItems = 'center';
+      videoWrapper.style.justifyContent = 'center';
+
       let videoElement = document.createElement('video');
       videoElement.id = videoId;
-      // Append video element to DOM
-      videoContainer.appendChild(videoElement);
-      // Then attach video
-      await mediaStream.attachVideo(selfId, videoElement);
-      // Style the video element to fill and maintain aspect ratio
+      videoElement.autoplay = true;
+      videoElement.playsInline = true;
+      videoElement.muted = true; // Mute self video to avoid echo
+
+      // Style the video element
       videoElement.style.width = '100%';
       videoElement.style.height = '100%';
-      videoElement.style.objectFit = 'contain';
+      videoElement.style.objectFit = 'cover';
+      videoElement.style.display = 'block';
+      videoElement.style.borderRadius = '4px';
+
+      // Add the video element to the wrapper
+      videoWrapper.appendChild(videoElement);
+
+      // Append wrapper to video container
+      videoContainer.appendChild(videoWrapper);
+
+      // Wait a bit to ensure the element is in the DOM before attaching
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Then attach video
+      await mediaStream.attachVideo(selfId, videoElement);
+
       console.log(`Rendering self video for user ${selfId}`);
     } catch (e) {
       console.error(`Error rendering self video for user ${selfId}`, e);
@@ -239,6 +268,25 @@ const leaveSession = async () => {
       }
     }
 
+    // Clean up any remaining video elements
+    const videoContainer = document.getElementById('video-container');
+    if (videoContainer) {
+      const videoWrappers = videoContainer.querySelectorAll('[id^="wrapper-"]');
+      videoWrappers.forEach(wrapper => {
+        try {
+          const userId = parseInt(wrapper.id.replace('wrapper-', ''));
+          if (mediaStream && !isNaN(userId)) {
+            mediaStream.detachVideo(userId).catch(err => {
+              console.error('Error detaching video during leave:', err);
+            });
+          }
+          wrapper.remove();
+        } catch (e) {
+          console.error('Error cleaning up video wrapper during leave:', e);
+        }
+      });
+    }
+
     // Leave Zoom session
     await client.leave();
 
@@ -259,7 +307,9 @@ onMounted(async () => {
     // Always fetch surahs if needed, but not here
     handleResize();
     window.addEventListener('resize', handleResize);
-  console.log('Join.vue props:', props);
+  console.log('Join.vue mounted with props:', props);
+  console.log('Current URL:', window.location.href);
+  console.log('User arrived at Join.vue at:', new Date().toISOString());
   const videoContainer = document.getElementById('video-container');
 
   try {
@@ -298,16 +348,44 @@ onMounted(async () => {
         const videoId = `video-${participant.userId}`;
         if (!document.getElementById(videoId)) {
             try {
+              // Create a wrapper div for better layout control
+              const videoWrapper = document.createElement('div');
+              videoWrapper.id = `wrapper-${participant.userId}`;
+              videoWrapper.style.flex = '1 1 auto';
+              videoWrapper.style.position = 'relative';
+              videoWrapper.style.margin = '2px';
+              videoWrapper.style.minWidth = '200px';
+              videoWrapper.style.minHeight = '150px';
+              videoWrapper.style.maxWidth = '300px';
+              videoWrapper.style.display = 'flex';
+              videoWrapper.style.alignItems = 'center';
+              videoWrapper.style.justifyContent = 'center';
+
               let videoElement = document.createElement('video');
               videoElement.id = videoId;
-              // Append video element to DOM
-              videoContainer.appendChild(videoElement);
-              // Then attach video
-              await mediaStream.attachVideo(participant.userId, videoElement);
-              // Style the video element to fill and maintain aspect ratio
+              videoElement.autoplay = true;
+              videoElement.playsInline = true;
+              videoElement.muted = false; // Allow audio for other participants
+
+              // Style the video element
               videoElement.style.width = '100%';
               videoElement.style.height = '100%';
-              videoElement.style.objectFit = 'contain';
+              videoElement.style.objectFit = 'cover';
+              videoElement.style.display = 'block';
+              videoElement.style.borderRadius = '4px';
+
+              // Add the video element to the wrapper
+              videoWrapper.appendChild(videoElement);
+
+              // Append wrapper to video container
+              videoContainer.appendChild(videoWrapper);
+
+              // Wait a bit to ensure the element is in the DOM before attaching
+              await new Promise(resolve => setTimeout(resolve, 100));
+
+              // Then attach video
+              await mediaStream.attachVideo(participant.userId, videoElement);
+
               console.log(`Rendering video for user ${participant.userId}`);
             } catch (e) {
               console.error(`Error rendering video for user ${participant.userId}`, e);
@@ -318,17 +396,26 @@ onMounted(async () => {
 
     const removeVideo = async (userId) => {
       const videoId = `video-${userId}`;
+      const wrapperId = `wrapper-${userId}`;
       const videoElement = document.getElementById(videoId);
+      const videoWrapper = document.getElementById(wrapperId);
+
       if (videoElement) {
-        videoElement.remove();
-        console.log(`Removed video for user ${userId}`);
-      }
-      if (mediaStream) {
-        try {
-          await mediaStream.detachVideo(userId);
-        } catch (e) {
-          console.error('Error detaching video:', e);
+        // First detach the video stream
+        if (mediaStream) {
+          try {
+            await mediaStream.detachVideo(userId);
+          } catch (e) {
+            console.error('Error detaching video:', e);
+          }
         }
+        // Remove the wrapper element (which contains the video element)
+        if (videoWrapper) {
+          videoWrapper.remove();
+        } else if (videoElement) {
+          videoElement.remove();
+        }
+        console.log(`Removed video for user ${userId}`);
       }
     };
 
@@ -385,6 +472,15 @@ onMounted(async () => {
 
     if (window.Echo) {
       console.log('Setting up Echo listener for live-session.' + props.liveSession.id);
+      // Debug: verify broadcasting auth endpoint is reachable before subscribing
+      try {
+        const authResp = await axios.post('/broadcasting/auth');
+        console.log('Broadcast auth response (full):', authResp);
+        console.log('Broadcast auth status:', authResp.status, 'headers:', authResp.headers);
+      } catch (authErr) {
+        console.error('Broadcast auth failed:', authErr.response ? authErr.response : authErr);
+      }
+
       echoListener = window.Echo.private(`live-session.${props.liveSession.id}`)
         .listen('.chat.message', (e) => {
           const messageExists = messages.value.some(msg => msg.id === e.chatMessage.id);
@@ -437,8 +533,35 @@ onUnmounted(() => {
   if (durationInterval) {
     clearInterval(durationInterval);
   }
+
+  // Properly clean up Zoom client
   if (client) {
-    client.leave();
+    // Try to leave gracefully, but handle potential errors
+    try {
+      client.leave();
+    } catch (e) {
+      console.error('Error leaving Zoom session:', e);
+    }
+  }
+
+  // Clean up any remaining video elements
+  const videoContainer = document.getElementById('video-container');
+  if (videoContainer) {
+    // Remove all video wrapper elements from the container
+    const videoWrappers = videoContainer.querySelectorAll('[id^="wrapper-"]');
+    videoWrappers.forEach(wrapper => {
+      try {
+        const userId = parseInt(wrapper.id.replace('wrapper-', ''));
+        if (mediaStream && !isNaN(userId)) {
+          mediaStream.detachVideo(userId).catch(err => {
+            console.error('Error detaching video:', err);
+          });
+        }
+        wrapper.remove();
+      } catch (e) {
+        console.error('Error cleaning up video wrapper element:', e);
+      }
+    });
   }
 });
 </script>
@@ -601,7 +724,7 @@ onUnmounted(() => {
                 </div>
               <div v-else class="max-w-4xl w-full h-full flex items-center justify-center relative">
                 <!-- Video container for Zoom SDK -->
-                <div id="video-container" class="video-player-container w-full h-full flex items-center justify-center bg-black rounded-lg" style="z-index: 1;"></div>
+                <div id="video-container" class="video-player-container w-full h-full flex flex-wrap items-center justify-center bg-black rounded-lg overflow-hidden" style="z-index: 1; min-height: 300px; position: relative;"></div>
                 <div
                     class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full z-10">
                   <button @click="toggleScreenShare" class="text-white hover:text-primary transition-colors p-2">

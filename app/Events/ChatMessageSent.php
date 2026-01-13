@@ -46,4 +46,30 @@ class ChatMessageSent implements ShouldBroadcast
     {
         return 'chat.message';
     }
+
+    /**
+     * Get the data to broadcast.
+     *
+     * @return array
+     */
+    public function broadcastWith(): array
+    {
+        return [
+            'chatMessage' => [
+                'id' => $this->chatMessage->id,
+                'live_session_id' => $this->chatMessage->live_session_id,
+                'user_id' => $this->chatMessage->user_id,
+                'message' => $this->chatMessage->message,
+                'created_at' => $this->chatMessage->created_at->toISOString(),
+                'user' => $this->chatMessage->user ? [
+                    'id' => $this->chatMessage->user->id,
+                    'first_name' => $this->chatMessage->user->first_name,
+                    'last_name' => $this->chatMessage->user->last_name,
+                    'name' => $this->chatMessage->user->first_name . ' ' . $this->chatMessage->user->last_name,
+                    'email' => $this->chatMessage->user->email,
+                    'role' => $this->chatMessage->user->role,
+                ] : null,
+            ],
+        ];
+    }
 }

@@ -118,7 +118,7 @@ const submit = () => {
                                     class="text-xs font-medium text-teal-600 hover:text-teal-700"
                                     >Forgot password?</Link
                                 >
-                                >
+                                
                             </div>
                             <div class="relative">
                                 <input

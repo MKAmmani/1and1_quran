@@ -1,6 +1,7 @@
 <script setup>
 import { router, Link, usePage } from "@inertiajs/vue3";
 import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { route } from 'ziggy-js';
 
 const props = defineProps({
     students: Array,
@@ -55,7 +56,7 @@ const currentDate = computed(() => {
 </script>
 
 <template>
-<body class="bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark font-body min-h-screen flex">
+<body class="bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark font-body min-h-screen flex flex-col md:flex-row">
     <!-- Mobile Header with Hamburger Menu -->
     <header class="md:hidden h-16 px-4 flex items-center justify-between flex-shrink-0 bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark z-20">
         <button @click="sidebarOpen = true" class="p-2 rounded-lg text-text-primary-light dark:text-text-primary-dark">
@@ -68,18 +69,14 @@ const currentDate = computed(() => {
     <!-- Mobile Sidebar Overlay -->
     <div v-if="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 md:hidden"></div>
 
-    <aside :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}" class="w-64 flex-shrink-0 bg-surface-light dark:bg-surface-dark border-r border-gray-200 dark:border-gray-700 h-screen sticky top-0 flex flex-col justify-between overflow-y-auto z-40 transition-transform duration-300 ease-in-out md:translate-x-0 md:static">
+    <aside :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}" class="fixed md:static md:translate-x-0 top-0 left-0 h-full w-64 bg-surface-light dark:bg-surface-dark border-r border-gray-200 dark:border-gray-700 flex-shrink-0 flex flex-col justify-between overflow-y-auto z-40 transition-transform duration-300 ease-in-out">
         <div>
             <div class="p-8 flex items-center justify-center">
                 <div class="flex flex-col items-center">
                     <div class="relative w-16 h-16 mb-2">
                         <img alt="Quran Class Logo" class="w-full h-full object-contain filter drop-shadow-md" src="/images/app_logo.jpg" />
                     </div>
-                    <div class="text-center leading-tight">
-                        <span class="block text-xs font-bold text-accent-gold uppercase tracking-widest">1-on-1</span>
-                        <span class="block text-lg font-bold text-primary dark:text-white">QURAN</span>
-                        <span class="block text-xs text-gray-500 dark:text-gray-400 tracking-wider">CLASSES</span>
-                    </div>
+                    
                 </div>
             </div>
             <nav class="px-4 space-y-2 mt-4">
@@ -124,8 +121,8 @@ const currentDate = computed(() => {
             </button>
         </div>
     </aside>
-    <main class="flex-1 flex flex-col h-screen overflow-hidden">
-        <header class="flex-shrink-0 px-10 py-8 flex items-center justify-between">
+    <main class="flex-1 flex flex-col h-full overflow-hidden">
+        <header class="flex-shrink-0 px-4 md:px-10 py-4 md:py-8 hidden md:flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">Assalaikum Alaykum, {{ $page.props.auth.user.first_name }}</h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ currentDate }}</p>
@@ -140,22 +137,22 @@ const currentDate = computed(() => {
                 </div>
             </div>
         </header>
-        <div class="flex-1 overflow-y-auto px-10 pb-10">
+        <div class="flex-1 overflow-y-auto px-4 md:px-10 pb-10">
             <div class="mb-6 flex items-center space-x-3 text-primary">
                 <span class="material-icons-outlined text-3xl transform -rotate-12">campaign</span>
-                <h2 class="text-2xl font-bold">Make announcement</h2>
+                <h2 class="text-xl md:text-2xl font-bold">Make announcement</h2>
             </div>
-            <div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 h-full flex flex-col relative">
-                <h3 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">Select list</h3>
-                <div class="flex-1 overflow-y-auto pr-2 space-y-6 mb-24">
-                    <div v-for="student in students" :key="student.id" class="flex items-center justify-between group hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 rounded-lg transition-colors">
-                        <div class="flex items-center space-x-6 w-1/4">
+            <div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-8 h-full flex flex-col relative">
+                <h3 class="text-lg md:text-2xl font-semibold text-gray-800 dark:text-white mb-6">Select list</h3>
+                <div class="flex-1 overflow-y-auto pr-2 space-y-6 mb-32 md:mb-24">
+                    <div v-for="student in students" :key="student.id" class="flex flex-col md:flex-row items-start md:items-center justify-between group hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 rounded-lg transition-colors gap-4">
+                        <div class="flex items-center space-x-4 md:space-x-6 w-full md:w-1/3">
                             <div class="relative flex items-center">
                                 <input type="checkbox" :value="student.id" v-model="form.students" class="w-6 h-6 text-primary bg-primary/10 border-none rounded focus:ring-primary dark:bg-gray-700 dark:checked:bg-primary" />
                             </div>
-                            <span class="text-lg font-medium text-gray-700 dark:text-gray-200">{{ student.first_name }} {{ student.last_name }}</span>
+                            <span class="text-base md:text-lg font-medium text-gray-700 dark:text-gray-200">{{ student.first_name }} {{ student.last_name }}</span>
                         </div>
-                        <div class="flex-1 max-w-md px-4">
+                        <div class="flex-1 w-full md:max-w-md px-0 md:px-4">
                             <div class="flex justify-between text-xs text-gray-400 dark:text-gray-500 mb-1">
                                 <span>{{ student.surahs_completed }} of 114 surahs</span>
                                 <span class="text-gray-600 dark:text-gray-300 font-medium">{{ student.progress }}% completed</span>
@@ -164,7 +161,7 @@ const currentDate = computed(() => {
                                 <div class="bg-primary h-1.5 rounded-full" :style="{ width: student.progress + '%' }"></div>
                             </div>
                         </div>
-                        <div class="flex items-center justify-end w-1/4 space-x-4">
+                        <div class="flex items-center justify-start md:justify-end w-full md:w-auto space-x-4">
                             <div class="flex items-center space-x-2">
                                 <div class="w-2.5 h-2.5 rounded-full" :class="student.online ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'"></div>
                                 <span class="text-sm text-gray-600 dark:text-gray-400">{{ student.online ? 'Online' : 'Offline' }}</span>
@@ -175,13 +172,13 @@ const currentDate = computed(() => {
                         </div>
                     </div>
                 </div>
-                <div class="absolute bottom-28 right-8 flex justify-end">
+                <div class="absolute bottom-28 right-8 justify-end hidden md:flex">
                     <button class="flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm font-medium">
                         <span class="material-icons-outlined mr-1 text-lg">expand_less</span>
                         Close all
                     </button>
                 </div>
-                <div class="absolute bottom-6 left-6 right-6">
+                <div class="absolute bottom-0 left-0 right-0 md:bottom-6 md:left-6 md:right-6 bg-white dark:bg-gray-900 md:bg-transparent p-4 md:p-0 border-t md:border-t-0 border-gray-200 dark:border-gray-700 md:dark:border-transparent rounded-t-lg md:rounded-t-none">
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <span class="material-icons-outlined text-primary text-2xl transform -rotate-12">campaign</span>
@@ -193,7 +190,7 @@ const currentDate = computed(() => {
                             </button>
                         </div>
                     </div>
-                    <div class="absolute inset-0 border border-primary/50 rounded-lg pointer-events-none"></div>
+                    <div class="absolute inset-0 border border-primary/50 rounded-lg pointer-events-none hidden md:block"></div>
                 </div>
             </div>
         </div>

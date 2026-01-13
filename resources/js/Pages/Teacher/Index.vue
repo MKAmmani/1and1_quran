@@ -41,25 +41,17 @@ const logout = () => {
 };
 
 // Function to start a live session
-const startLiveSession = async () => {
-    try {
-        const studentIds = props.students.map(s => s.id);
-        const response = await axios.post(route('live-class.start'), {
-            title: "Today's Quran Class",
-            students: studentIds,
-        });
-
-        if (response.data && response.data.success) {
-            // Redirect to the live class page
-            router.visit(route('live'));
-        } else {
-            console.error('Failed to start live session:', response.data.message);
+const startLiveSession = () => {
+    const studentIds = props.students.map(s => s.id);
+    router.post(route('live-class.start'), {
+        title: "Today's Quran Class",
+        students: studentIds,
+    }, {
+        onError: (errors) => {
+            console.error('Error starting live session:', errors);
             alert('Failed to start live session. Please try again.');
         }
-    } catch (error) {
-        console.error('Error starting live session:', error);
-        alert('Failed to start live session. Please try again.');
-    }
+    });
 };
 
 // Check if current route is the prepare class route

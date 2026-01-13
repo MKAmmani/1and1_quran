@@ -23,6 +23,7 @@
         "vue": "^3.4.0"
     },
     "dependencies": {
-        "@zoom/videosdk": "^2.3.5"
+        "@zoom/videosdk": "^2.3.5",
+        "ziggy-js": "^2.6.0"
     }
 }

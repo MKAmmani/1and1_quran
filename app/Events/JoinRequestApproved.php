@@ -5,7 +5,6 @@ namespace App\Events;
 use App\Models\JoinRequest;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -40,5 +39,22 @@ class JoinRequestApproved implements ShouldBroadcastNow
     public function broadcastAs()
     {
         return 'join.request.approved';
+    }
+
+    public function broadcastWith()
+    {
+        $data = [
+            'joinRequest' => [
+                'id' => $this->joinRequest->id,
+                'student_id' => $this->joinRequest->student_id,
+                'live_session_id' => $this->joinRequest->live_session_id,
+                'status' => $this->joinRequest->status,
+            ]
+        ];
+
+        // Debug logging
+        \Log::info('JoinRequestApproved event broadcast data', $data);
+
+        return $data;
     }
 }

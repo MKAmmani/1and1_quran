@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\AnnouncementSent;
 use App\Events\QuranVerseChanged;
 use App\Models\LiveSession;
 use App\Models\SessionParticipant;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Enums\UserRole;
+use Illuminate\Support\Facades\DB;
 use App\Services\QuranApiService;
 use App\Models\Announcement;
 use App\Models\AnnouncementRecipient;
@@ -159,6 +161,10 @@ class TeacherController extends Controller
             ]);
         }
 
+        // Load recipients and broadcast the event
+        $announcement->load('recipients');
+        broadcast(new AnnouncementSent($announcement))->toOthers();
+
         return redirect()->back()->with('success', 'Announcement sent successfully.');
     }
 
@@ -173,25 +179,24 @@ class TeacherController extends Controller
         $liveSession = LiveSession::firstOrCreate(
             ['teacher_id' => auth()->id(), 'status' => 'live'],
             [
-                'title' => $request->input('title', 'Quran Class Session'),
+                'title' => $request->input('title') ?? 'Quran Class Session',
                 'session_name' => 'session-' . time(),
                 'started_at' => now(),
             ]
         );
-
         foreach ($request->students as $studentId) {
-            SessionParticipant::create([
-                'live_session_id' => $liveSession->id,
-                'user_id' => $studentId,
-            ]);
+            SessionParticipant::updateOrCreate(
+                [
+                    'live_session_id' => $liveSession->id,
+                    'user_id' => $studentId,
+                ],
+                [
+                    // 'joined_at' => now(), // Don't mark as joined automatically
+                ]
+            );
         }
 
-        return response()->json([
-            'success' => true,
-            'liveSessionId' => $liveSession->id,
-            'sessionName' => $liveSession->session_name,
-            'message' => 'Live session started successfully.'
-        ]);
+        return redirect()->route('live');
     }
 
     public function live(Request $request){
@@ -200,6 +205,7 @@ class TeacherController extends Controller
         // We can pass any necessary data to the view, like an existing session if applicable.
         $liveSession = LiveSession::where('teacher_id', auth()->id())
                                   ->where('status', 'live')
+                                  ->latest()
                                   ->first();
 
         return inertia('Teacher/Live', [
@@ -244,16 +250,31 @@ class TeacherController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $joinRequest->update(['status' => 'approved']);
+        \DB::transaction(function () use ($joinRequest) {
+            $joinRequest->update(['status' => 'approved']);
 
-        // Add student to participants
-        \App\Models\SessionParticipant::create([
-            'live_session_id' => $joinRequest->live_session_id,
-            'user_id' => $joinRequest->student_id,
-            'joined_at' => now(),
-        ]);
+            // Add student to participants
+            \App\Models\SessionParticipant::updateOrCreate([
+                'live_session_id' => $joinRequest->live_session_id,
+                'user_id' => $joinRequest->student_id,
+            ], [
+                'joined_at' => now(),
+            ]);
 
-        event(new \App\Events\JoinRequestApproved($joinRequest));
+            // Reload the join request with necessary relationships
+            $joinRequest->refresh();
+            $joinRequest->load(['liveSession']);
+
+            // Debug logging
+            \Log::info('JoinRequestApproved event being dispatched', [
+                'join_request_id' => $joinRequest->id,
+                'student_id' => $joinRequest->student_id,
+                'live_session_id' => $joinRequest->live_session_id,
+                'live_session_data' => $joinRequest->liveSession->toArray()
+            ]);
+
+            event(new \App\Events\JoinRequestApproved($joinRequest));
+        });
 
         return response()->json(['success' => true]);
     }
@@ -274,7 +295,10 @@ class TeacherController extends Controller
     public function history()
     {
         $sessions = LiveSession::where('status', 'ended')
-            ->with('teacher', 'students')
+            ->where('teacher_id', auth()->id())
+            ->with(['teacher', 'students' => function ($query) {
+                $query->wherePivot('joined_at', '!=', null);
+            }])
             ->orderBy('id', 'desc')
             ->get();
 
@@ -289,18 +313,38 @@ class TeacherController extends Controller
 
     public function changeQuranVerse(Request $request, LiveSession $liveSession)
     {
-        if ($liveSession->teacher_id !== auth()->id()) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        try {
+            if ($liveSession->teacher_id !== auth()->id()) {
+                \Log::warning('Unauthorized attempt to change Quran verse', [
+                    'user_id' => auth()->id(),
+                    'session_id' => $liveSession->id,
+                    'teacher_id' => $liveSession->teacher_id
+                ]);
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
+
+            $validated = $request->validate([
+                'surah' => 'required|integer|min:1|max:114',
+                'ayah' => 'required|integer|min:1',
+                'surah_name' => 'required|string',
+            ]);
+
+            \Log::info('Broadcasting Quran verse change', [
+                'session_id' => $liveSession->id,
+                'surah' => $validated['surah'],
+                'ayah' => $validated['ayah'],
+                'surah_name' => $validated['surah_name']
+            ]);
+
+            broadcast(new QuranVerseChanged($liveSession->id, $validated['surah'], $validated['ayah'], $validated['surah_name']));
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            \Log::error('Error in changeQuranVerse', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'Internal server error'], 500);
         }
-
-        $validated = $request->validate([
-            'surah' => 'required|integer|min:1|max:114',
-            'ayah' => 'required|integer|min:1',
-            'surah_name' => 'required|string',
-        ]);
-
-        broadcast(new QuranVerseChanged($liveSession->id, $validated['surah'], $validated['ayah'], $validated['surah_name']));
-
-        return response()->json(['success' => true]);
     }
 }

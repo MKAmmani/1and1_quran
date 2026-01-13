@@ -33,12 +33,12 @@ Route::get('/class/history', [TeacherController::class, 'history'])
 Route::get('/teacher/dashboard', [TeacherController::class, 'index'])->middleware(['auth', 'verified', 'role:' . UserRole::Teacher->value])->name('teacher.index');
 
 Route::post('/video-sdk/token', [VideoSDKTokenController::class, 'generate'])
-    ->middleware('auth');
+    ->middleware('auth')
+    ->name('video-sdk.token');
 
 Route::middleware(['auth'])->group(function () {
-    Route::post('/broadcasting/auth', function () {
-        return auth()->user();
-    });
+    // Custom broadcasting authentication for enhanced security
+    Route::post('/broadcasting/socket-auth', [\App\Http\Controllers\BroadcastingController::class, 'authenticate']);
 
     Route::get('/live-sessions/{liveSession}/chat', [ChatMessageController::class, 'index']);
     Route::post('/chat-messages', [ChatMessageController::class, 'store']);
@@ -49,6 +49,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/live-sessions/{liveSession}/request-join', [StudentController::class, 'requestToJoin'])
         ->middleware('role:' . \App\Enums\UserRole::Student->value)
         ->name('live-session.request-join');
+    Route::get('/live-sessions/{liveSession}/waiting-approval/{joinRequest?}', [StudentController::class, 'waitingForApproval'])
+        ->middleware('role:' . \App\Enums\UserRole::Student->value)
+        ->name('student.waiting-approval');
+    Route::get('/join-requests/{joinRequest}/status', [StudentController::class, 'checkJoinRequestStatus'])
+        ->middleware('role:' . \App\Enums\UserRole::Student->value)
+        ->name('join-request.status');
 });
 
 Route::get('/student/dashboard', [StudentController::class, 'dashboard'])

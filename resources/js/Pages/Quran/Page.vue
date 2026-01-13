@@ -1,7 +1,9 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import axios from 'axios';
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link, usePage, router } from '@inertiajs/vue3';
+import { route } from 'ziggy-js';
+import Announcement from '../Teacher/Announcement.vue';
 
 const props = defineProps({
   surah_details: Object,
@@ -14,6 +16,7 @@ const searchAyah = ref('');
 const searchedVerse = ref(null);
 const sidebarOpen = ref(false);
 const page = usePage();
+const isStudent = computed(() => page.props.auth.user.role === 'student');
 
 const fetchAyah = async () => {
     if (!searchAyah.value) {
@@ -69,42 +72,56 @@ onBeforeUnmount(() => {
                     <img alt="1-on-1 Quran Classes Logo" class="w-full h-auto object-contain" src="/images/app_logo.jpg" />
                 </div>
             </div>
-            <nav class="px-4 space-y-1">
-                <a class="flex items-center px-4 py-3 text-sm font-medium text-muted-light dark:text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" href="#">
+            <nav v-if="!isStudent" class="px-4 space-y-1">
+                <Link class="flex items-center px-4 py-3 text-sm font-medium text-muted-light dark:text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" :href="route('teacher.index')">
                     <span class="material-icons text-[20px] mr-3">home</span>
                     Home
-                </a>
-                <a class="flex items-center px-4 py-3 text-sm font-medium text-muted-light dark:text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" href="#">
+                </Link>
+                <Link class="flex items-center px-4 py-3 text-sm font-medium text-muted-light dark:text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" :href="route('prepre_class')">
                     <span class="material-icons text-[20px] mr-3">class</span>
                     Prepare Class
-                </a>
-                <a class="flex items-center px-4 py-3 text-sm font-medium text-muted-light dark:text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" href="#">
+                </Link>
+                <Link class="flex items-center px-4 py-3 text-sm font-medium text-muted-light dark:text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" :href="route('teacher.students')">
                     <span class="material-icons text-[20px] mr-3">playlist_add_check</span>
                     Students
-                </a>
-                <a class="flex items-center px-4 py-3 text-sm font-medium text-muted-light dark:text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" href="#">
+                </Link>
+                <Link class="flex items-center px-4 py-3 text-sm font-medium text-muted-light dark:text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" :href="route('announcement')">
                     <span class="material-icons text-[20px] mr-3">campaign</span>
                     Announcement
-                </a>
-                <a class="flex items-center px-4 py-3 text-sm font-medium text-muted-light dark:text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" href="#">
+                </Link>
+                <Link class="flex items-center px-4 py-3 text-sm font-medium text-muted-light dark:text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" :href="route('live')">
                     <span class="material-icons text-[20px] mr-3">videocam</span>
                     Live class
-                </a>
-                <a class="flex items-center px-4 py-3 text-sm font-medium text-white bg-primary rounded-lg shadow-md transition-colors" href="#">
+                </Link>
+                <Link class="flex items-center px-4 py-3 text-sm font-medium text-white bg-primary rounded-lg shadow-md transition-colors" :href="route('quran.surahs')">
                     <span class="material-icons text-[20px] mr-3">menu_book</span>
-                    Quran Pages
-                </a>
-                <a class="flex items-center px-4 py-3 text-sm font-medium text-muted-light dark:text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" href="#">
+                    Quran library
+                </Link>
+                <Link class="flex items-center px-4 py-3 text-sm font-medium text-muted-light dark:text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" :href="route('class.history')">
                     <span class="material-icons text-[20px] mr-3">history_edu</span>
                     Class history
-                </a>
+                </Link>
+            </nav>
+            <nav v-else class="flex-1 px-4 space-y-2 mt-4">
+                <Link class="flex items-center px-4 py-3 bg-primary text-white rounded-lg shadow-md transition-all hover:bg-secondary group" :href="route('student.dashboard')">
+                    <span class="material-icons text-xl mr-3">home</span>
+                    <span class="font-medium">Home</span>
+                </Link>
+                <Link class="flex items-center px-4 py-3 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group" href="#">
+                    <span class="material-icons text-xl mr-3 group-hover:text-primary transition-colors">videocam</span>
+                    <span class="font-medium">Live class</span>
+                </Link>
+                <Link class="flex items-center px-4 py-3 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group" :href="route('quran.surahs')">
+                    <span class="material-icons text-xl mr-3 group-hover:text-primary transition-colors">library_books</span>
+                    <span class="font-medium">Quran library</span>
+                </Link>
             </nav>
         </div>
-        <div class="px-4 py-6 space-y-1 border-t border-gray-100 dark:border-gray-800">
-            <a class="flex items-center px-4 py-3 text-sm font-medium text-muted-light dark:text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" href="#">
+        <div v-if="!isStudent" class="px-4 py-6 space-y-1 border-t border-gray-100 dark:border-gray-800">
+            <Link class="flex items-center px-4 py-3 text-sm font-medium text-muted-light dark:text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" :href="route('profile.edit')">
                 <span class="material-icons text-[20px] mr-3">settings</span>
                 Settings
-            </a>
+            </Link>
             <Link :href="route('logout')" method="post" as="button" class="w-full flex items-center px-4 py-3 text-sm font-medium text-muted-light dark:text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
                 <span class="material-icons text-[20px] mr-3">logout</span>
                 Logout
@@ -112,6 +129,16 @@ onBeforeUnmount(() => {
             <div class="flex justify-end pt-4 pr-2">
                 <span class="material-icons text-muted-light dark:text-muted-dark text-sm cursor-pointer">compare_arrows</span>
             </div>
+        </div>
+        <div v-else class="p-4 space-y-2 mb-4">
+            <Link  class="flex items-center px-4 py-3 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group" href="#">
+                <span class="material-icons text-xl mr-3 group-hover:text-primary transition-colors">settings</span>
+                <span class="font-medium">Settings</span>
+            </Link>
+            <Link :href="route('logout')" method="post" as="button" class="w-full text-left flex items-center px-4 py-3 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group">
+                <span class="material-icons text-xl mr-3 group-hover:text-primary transition-colors">logout</span>
+                <span class="font-medium">Logout</span>
+            </Link>
         </div>
     </aside>
     <main class="flex-1 flex flex-col h-full overflow-hidden relative">

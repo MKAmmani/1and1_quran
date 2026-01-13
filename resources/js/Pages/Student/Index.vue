@@ -19,6 +19,8 @@ const props = defineProps({
     upcomingClasses: Array,
 });
 
+const localAnnouncements = ref(props.announcements);
+
 const sidebarOpen = ref(false);
 
 const page = usePage();
@@ -29,7 +31,9 @@ const currentDate = computed(() => {
 });
 
 const requestToJoin = (sessionId) => {
-    router.post(route('live-session.request-join', sessionId));
+    router.visit(`/live-sessions/${sessionId}/request-join`, {
+        method: 'post'
+    });
 };
 
 const logout = () => {
@@ -49,9 +53,25 @@ onMounted(() => {
 
         window.Echo.private(channelName)
             .listen('.join.request.approved', (e) => {
-                alert('Join request approved event received! The student should now be redirected.');
+                console.log('Join request approved event received in Student Index:', e);
+                console.log('Event details:', {
+                    hasJoinRequest: !!e.joinRequest,
+                    hasLiveSessionId: e.joinRequest && e.joinRequest.live_session_id,
+                    liveSessionId: e.joinRequest ? e.joinRequest.live_session_id : undefined
+                });
+
+                alert('Join request approved — redirecting to class.');
                 console.log('Join request approved event received:', e);
-                router.visit(route('live-session.join', e.joinRequest.live_session_id));
+
+                if (e.joinRequest && e.joinRequest.live_session_id) {
+                    router.get(route('live-session.join', { liveSession: e.joinRequest.live_session_id }));
+                } else {
+                    console.error('Event payload missing required data for redirect:', e);
+                }
+            })
+            .listen('.announcement.sent', (e) => {
+                console.log('Announcement received:', e);
+                localAnnouncements.value.unshift(e.announcement);
             });
     }
 });
@@ -84,24 +104,24 @@ onBeforeUnmount(() => {
                 </div>
             </div>
             <nav class="flex-1 px-4 space-y-2 mt-4">
-                <a class="flex items-center px-4 py-3 bg-primary text-white rounded-lg shadow-md transition-all hover:bg-secondary group" href="#">
+                <Link class="flex items-center px-4 py-3 bg-primary text-white rounded-lg shadow-md transition-all hover:bg-secondary group" :href="route('student.dashboard')">
                     <span class="material-icons text-xl mr-3">home</span>
                     <span class="font-medium">Home</span>
-                </a>
-                <a class="flex items-center px-4 py-3 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group" href="#">
+                </Link>
+                <Link class="flex items-center px-4 py-3 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group" href="#">
                     <span class="material-icons text-xl mr-3 group-hover:text-primary transition-colors">videocam</span>
                     <span class="font-medium">Live class</span>
-                </a>
-                <a class="flex items-center px-4 py-3 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group" href="#">
+                </Link>
+                <Link class="flex items-center px-4 py-3 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group" :href="route('quran.surahs')">
                     <span class="material-icons text-xl mr-3 group-hover:text-primary transition-colors">library_books</span>
                     <span class="font-medium">Quran library</span>
-                </a>
+                </Link>
             </nav>
             <div class="p-4 space-y-2 mb-4">
-                <a class="flex items-center px-4 py-3 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group" href="#">
+                <Link  class="flex items-center px-4 py-3 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group" :href="route('profile.edit')">
                     <span class="material-icons text-xl mr-3 group-hover:text-primary transition-colors">settings</span>
                     <span class="font-medium">Settings</span>
-                </a>
+                </Link>
                 <button @click="logout" class="w-full text-left flex items-center px-4 py-3 text-text-muted-light dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group">
                     <span class="material-icons text-xl mr-3 group-hover:text-primary transition-colors">logout</span>
                     <span class="font-medium">Logout</span>
@@ -178,8 +198,8 @@ onBeforeUnmount(() => {
                 <section>
                     <h2 class="text-xl font-bold text-text-light dark:text-text-dark mb-6">Announcement</h2>
                     <div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 space-y-6">
-                        <div v-if="announcements && announcements.length > 0">
-                            <div v-for="announcement in announcements" :key="announcement.id" class="flex gap-4 items-start">
+                        <div v-if="localAnnouncements && localAnnouncements.length > 0">
+                            <div v-for="announcement in localAnnouncements" :key="announcement.id" class="flex gap-4 items-start">
                                 <div class="mt-1 text-primary">
                                     <span class="material-icons rotate-12">campaign</span>
                                 </div>

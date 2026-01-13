@@ -20,39 +20,39 @@
             <img src="/images/app_logo.jpg" alt="App Logo" class="h-40 w-auto">
         </div>
         <nav class="flex-1 px-4 space-y-2">
-            <a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" href="#">
+            <Link class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" :href="route('teacher.index')">
                 <span class="material-symbols-outlined">home</span>
                 <span class="font-medium">Home</span>
-            </a>
-            <a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" href="#">
+            </Link>
+            <Link class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" :href="route('prepre_class')">
                 <span class="material-symbols-outlined">edit_note</span>
                 <span class="font-medium">Prepare Class</span>
-            </a>
-            <a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" href="#">
+            </Link>
+            <Link class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" :href="route('teacher.students')">
                 <span class="material-symbols-outlined">group</span>
                 <span class="font-medium">Students</span>
-            </a>
-            <a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" href="#">
+            </Link>
+            <Link class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" :href="route('announcement')">
                 <span class="material-symbols-outlined">campaign</span>
                 <span class="font-medium">Announcement</span>
-            </a>
-            <a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" href="#">
+            </Link>
+            <Link class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" :href="route('live')">
                 <span class="material-symbols-outlined">videocam</span>
                 <span class="font-medium">Live class</span>
-            </a>
-            <a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" href="#">
+            </Link>
+            <Link class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" :href="route('quran.surahs')">
                 <span class="material-symbols-outlined">book_2</span>
-                <span class="font-medium">Quran pages</span>
-            </a>
-            <a class="flex items-center gap-4 px-4 py-3 rounded-lg bg-primary text-white shadow-md" href="#">
+                <span class="font-medium">Quran library</span>
+            </Link>
+            <Link class="flex items-center gap-4 px-4 py-3 rounded-lg bg-primary text-white shadow-md" :href="route('class.history')">
                 <span class="material-symbols-outlined">history_edu</span>
                 <span class="font-medium">History</span>
-            </a>
+            </Link>
             <div class="pt-8"></div>
-            <a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" href="#">
+            <Link class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" :href="route('profile.edit')">
                 <span class="material-symbols-outlined">settings</span>
                 <span class="font-medium">Settings</span>
-            </a>
+            </Link>
         </nav>
         <div class="p-4 mt-auto">
             <Link :href="route('logout')" method="post" as="button" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-logout-bg dark:bg-red-900/30 text-logout-text dark:text-red-400 font-medium hover:opacity-90 transition-all duration-200">
@@ -106,7 +106,13 @@
                                     Teacher: {{ session.teacher.first_name }} {{ session.teacher.last_name }}
                                 </div>
                                 <div class="text-text-secondary-light dark:text-text-secondary-dark text-sm md:text-base">
-                                    Student: {{ session.students.map(s => s.first_name + ' ' + s.last_name).join(' & ') }}
+                                    Student: 
+                                    <span v-if="session.students && session.students.length > 0">
+                                        {{ session.students.map(s => s.first_name + ' ' + s.last_name).join(' & ') }}
+                                    </span>
+                                    <span v-else class="italic text-gray-500">
+                                        No participants
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -125,6 +131,7 @@
 
 <script>
 import { Link } from '@inertiajs/vue3';
+import { route } from 'ziggy-js';
 
 export default {
     components: {

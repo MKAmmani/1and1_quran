@@ -14,7 +14,7 @@ export default defineConfig({
             host: 'localhost',
             port: 5173,
         },
-        allowedHosts: ['localhost', '127.0.0.1', '::1'],
+        allowedHosts: ['localhost', '127.0.0.1', '::1', '0.0.0.0'],
     },
     plugins: [
         laravel({
@@ -23,6 +23,9 @@ export default defineConfig({
         }),
         vue({
             template: {
+                compilerOptions: {
+                    isCustomElement: (tag) => ['video-player-container', 'video-player'].includes(tag),
+                },
                 transformAssetUrls: {
                     base: null,
                     includeAbsolute: false,

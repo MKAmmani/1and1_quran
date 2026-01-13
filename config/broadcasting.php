@@ -15,6 +15,7 @@ return [
     |
     */
 
+    // Use the BROADCAST_CONNECTION env var to choose broadcaster; default to 'reverb' for local development
     'default' => env('BROADCAST_CONNECTION', 'reverb'),
 
     /*

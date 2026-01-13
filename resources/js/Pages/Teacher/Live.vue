@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import axios from 'axios'
 import client, { initZoom } from '@/zoom/client'
 import { router, usePage, Link } from '@inertiajs/vue3'
+import { route } from 'ziggy-js'
 
 /* ---------------- ROUTE HELPERS ---------------- */
 const isCurrentRoute = (routeName) => route().current(routeName)
@@ -530,10 +531,10 @@ onUnmounted(async () => {
                     <span class="material-symbols-outlined">edit_note</span>
                     <span class="font-medium">Prepare Class</span>
                 </Link>
-                <a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" href="#">
+                <Link class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" :href="route('teacher.students')">
                     <span class="material-symbols-outlined">group</span>
                     <span class="font-medium">Students</span>
-                </a>
+                </Link>
                 <Link :href="route('announcement')" :class="{'bg-primary text-white shadow-md shadow-primary/30': isCurrentRoute('announcement'), 'text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary': !isCurrentRoute('announcement')}" class="flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200">
                     <span class="material-symbols-outlined">campaign</span>
                     <span class="font-medium">Announcement</span>
@@ -542,14 +543,14 @@ onUnmounted(async () => {
                     <span class="material-symbols-outlined">videocam</span>
                     <span class="font-medium">Live class</span>
                 </Link>
-                <a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" href="#">
+                <Link class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" :href="route('quran.surahs')">
                     <span class="material-symbols-outlined">book_2</span>
                     <span class="font-medium">Quran library</span>
-                </a>
-                <a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" href="#">
+                </Link>
+                <Link class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-secondary dark:hover:bg-primary/10 hover:text-primary transition-all duration-200" :href="route('class.history')">
                     <span class="material-symbols-outlined">history_edu</span>
                     <span class="font-medium">Class history</span>
-                </a>
+                </Link>
 
             </nav>
             <div class="p-4 mt-auto">
