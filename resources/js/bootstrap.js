@@ -6,8 +6,9 @@ window.Pusher = Pusher;
 
 window.axios = axios;
 
+window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 // Get CSRF token from meta tag
-let token = document.head.querySelector('meta[name="csrf-token"]');
+/*let token = document.head.querySelector('meta[name="csrf-token"]');
 if (token) {
     window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token.content;
 } else {
@@ -16,7 +17,7 @@ if (token) {
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 // Ensure cookies (session) are sent with requests from Vite dev server so /broadcasting/auth works
-window.axios.defaults.withCredentials = true;
+window.axios.defaults.withCredentials = true; */
 
 // Only initialize Echo if Reverb environment variables are set
 if (import.meta.env.VITE_REVERB_APP_KEY) {
