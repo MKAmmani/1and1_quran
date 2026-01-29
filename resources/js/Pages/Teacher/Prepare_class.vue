@@ -18,6 +18,14 @@ const currentDate = computed(() => {
     });
 });
 
+const getSurahName = (surahId) => {
+    if (!surahId || !props.surahs) {
+        return 'N/A';
+    }
+    const surah = props.surahs.find(s => s.id === surahId);
+    return surah ? surah.name_simple : `Surah ${surahId}`;
+};
+
 const form = useForm({
     students: [],
     title: '',
@@ -186,6 +194,9 @@ onUnmounted(() => {
                                 </div>
                                 <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
                                     <div class="bg-primary h-1.5 rounded-full" :style="{ width: student.progress + '%' }"></div>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1" v-if="student.current_surah_id">
+                                    Currently on: <span class="font-medium">{{ getSurahName(student.current_surah_id) }}</span>
                                 </div>
                             </div>
                             <div class="flex items-center justify-end gap-4 ml-auto">

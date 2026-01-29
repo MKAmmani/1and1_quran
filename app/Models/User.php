@@ -63,4 +63,9 @@ class User extends Authenticatable
         return $this->belongsToMany(LiveSession::class, 'session_participants', 'user_id', 'live_session_id')
                     ->withPivot('joined_at', 'left_at');
     }
+
+    public function studentProgress()
+    {
+        return $this->hasMany(StudentProgress::class, 'student_id');
+    }
 }

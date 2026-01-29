@@ -16,7 +16,7 @@ use App\Models\AnnouncementRecipient;
 
 class TeacherController extends Controller
 {
-    public function index()
+    public function index(QuranApiService $quran)
     {
         $teacher = auth()->user();
 
@@ -25,14 +25,28 @@ class TeacherController extends Controller
             $query->select('id')->from('live_sessions')->where('teacher_id', $teacher->id);
         })->distinct()->pluck('user_id');
 
-        $students = User::whereIn('id', $studentIds)->get()->map(function ($student) {
-            $last_activity = \DB::table('sessions')->where('user_id', $student->id)->max('last_activity');
-            $student->online = $last_activity ? (time() - $last_activity) < 300 : false;
-            // Mocking progress
-            $student->progress = rand(10, 90);
-            $student->surahs_completed = floor(114 * ($student->progress / 100));
-            return $student;
-        });
+        $students = User::whereIn('id', $studentIds)
+            ->with(['studentProgress' => function ($query) use ($teacher) {
+                $query->where('teacher_id', $teacher->id);
+            }])
+            ->get()
+            ->map(function ($student) {
+                $last_activity = \DB::table('sessions')->where('user_id', $student->id)->max('last_activity');
+                $student->online = $last_activity ? (time() - $last_activity) < 300 : false;
+
+                $progress = $student->studentProgress->first();
+
+                if ($progress && $progress->surah_id) {
+                    $student->progress = floor((($progress->surah_id - 1) / 114) * 100);
+                    $student->surahs_completed = $progress->surah_id - 1;
+                    $student->current_surah_id = $progress->surah_id;
+                } else {
+                    $student->progress = 0;
+                    $student->surahs_completed = 0;
+                    $student->current_surah_id = null;
+                }
+                return $student;
+            });
 
         // Quick Stats
         $totalStudents = $students->count();
@@ -52,6 +66,8 @@ class TeacherController extends Controller
             ->where('status', 'scheduled')
             ->orderBy('created_at')
             ->get();
+        
+        $surahs = $quran->getChapters();
 
         return inertia('Teacher/Index', [
             'students' => $students,
@@ -59,6 +75,7 @@ class TeacherController extends Controller
             'classesThisWeek' => $classesThisWeek,
             'recentActivities' => $recentActivities,
             'upcomingClasses' => $upcomingClasses,
+            'surahs' => $surahs['chapters'],
         ]);
     }
 
@@ -68,7 +85,27 @@ class TeacherController extends Controller
         $studentIds = SessionParticipant::whereIn('live_session_id', function ($query) use ($teacher) {
             $query->select('id')->from('live_sessions')->where('teacher_id', $teacher->id);
         })->distinct()->pluck('user_id');
-        $students = User::whereIn('id', $studentIds)->get();
+        
+        $students = User::whereIn('id', $studentIds)
+            ->with(['studentProgress' => function ($query) use ($teacher) {
+                $query->where('teacher_id', $teacher->id);
+            }])
+            ->get()
+            ->map(function ($student) {
+                $progress = $student->studentProgress->first();
+
+                if ($progress && $progress->surah_id) {
+                    $student->surahs_completed = $progress->surah_id - 1;
+                    $student->current_surah_id = $progress->surah_id;
+                    $student->progress = floor((($progress->surah_id - 1) / 114) * 100);
+                } else {
+                    $student->surahs_completed = 0;
+                    $student->current_surah_id = null;
+                    $student->progress = 0;
+                }
+                return $student;
+            });
+
         $surahs = $quran->getChapters();
 
         return inertia('Teacher/Prepare_class', [
@@ -90,7 +127,7 @@ class TeacherController extends Controller
         ]);
     }
 
-    public function students()
+    public function students(QuranApiService $quran)
     {
         $teacher = auth()->user();
 
@@ -99,17 +136,34 @@ class TeacherController extends Controller
             $query->select('id')->from('live_sessions')->where('teacher_id', $teacher->id);
         })->distinct()->pluck('user_id');
 
-        $students = User::whereIn('id', $studentIds)->get()->map(function ($student) {
-            $last_activity = \DB::table('sessions')->where('user_id', $student->id)->max('last_activity');
-            $student->online = $last_activity ? (time() - $last_activity) < 300 : false;
-            // Mocking progress
-            $student->progress = rand(10, 90);
-            $student->surahs_completed = floor(114 * ($student->progress / 100));
-            return $student;
-        });
+        $students = User::whereIn('id', $studentIds)
+            ->with(['studentProgress' => function ($query) use ($teacher) {
+                $query->where('teacher_id', $teacher->id);
+            }])
+            ->get()
+            ->map(function ($student) {
+                $last_activity = \DB::table('sessions')->where('user_id', $student->id)->max('last_activity');
+                $student->online = $last_activity ? (time() - $last_activity) < 300 : false;
+
+                $progress = $student->studentProgress->first();
+
+                if ($progress && $progress->surah_id) {
+                    $student->progress = floor((($progress->surah_id - 1) / 114) * 100);
+                    $student->surahs_completed = $progress->surah_id - 1;
+                    $student->current_surah_id = $progress->surah_id;
+                } else {
+                    $student->progress = 0;
+                    $student->surahs_completed = 0;
+                    $student->current_surah_id = null;
+                }
+                return $student;
+            });
+
+        $surahs = $quran->getChapters();
 
         return inertia('Teacher/Student', [
             'students' => $students,
+            'surahs' => $surahs['chapters'],
         ]);
     }
 
