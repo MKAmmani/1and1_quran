@@ -1,6 +1,8 @@
 <script setup>
 import { Link } from "@inertiajs/vue3";
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
+
+const isScrolled = ref(false);
 
 // Function to close the mobile menu
 const closeMobileMenu = () => {
@@ -30,6 +32,11 @@ onMounted(() => {
             }
         });
     }
+
+    // Handle scroll effect for header
+    window.addEventListener('scroll', () => {
+        isScrolled.value = window.scrollY > 10;
+    });
 });
 </script>
 
@@ -111,30 +118,34 @@ onMounted(() => {
         </header>
 
         <!-- Desktop Header (Hidden on small screens) -->
-        <header class="bg-white shadow-sm hidden lg:block">
+        <header
+            class="bg-white shadow-sm hidden lg:block fixed w-full top-0 z-50 transition-all duration-300"
+            :class="{ 'py-2 shadow-md': isScrolled, 'py-4': !isScrolled }"
+        >
             <div
-                class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center"
+                class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center"
             >
                 <div class="flex items-center">
                     <img
                         src="/images/app_logo.jpg"
                         alt="1-on-1 Quran Classes Logo"
-                        class="h-16 md:h-20 w-auto md:w-48 object-contain rounded-md"
+                        class="h-12 md:h-16 w-auto md:w-40 object-contain rounded-md transition-all duration-300"
+                        :class="{ 'h-10 md:h-14': isScrolled }"
                     />
                     <nav class="ml-10 space-x-8">
                         <Link
                             :href="route('welcome')"
-                            class="text-gray-600 hover:text-teal-600"
+                            class="text-gray-600 hover:text-teal-600 font-medium transition-colors duration-300"
                             >Home</Link
                         >
                         <Link
                             :href="route('login')"
-                            class="text-gray-600 hover:text-teal-600"
+                            class="text-gray-600 hover:text-teal-600 font-medium transition-colors duration-300"
                             >About us</Link
                         >
                         <Link
                             :href="route('login')"
-                            class="text-gray-600 hover:text-teal-600"
+                            class="text-gray-600 hover:text-teal-600 font-medium transition-colors duration-300"
                             >Contact</Link
                         >
                     </nav>
@@ -142,13 +153,13 @@ onMounted(() => {
                 <div class="space-x-4">
                     <Link
                         :href="route('login')"
-                        class="border border-teal-600 text-teal-600 px-4 py-2 rounded-md hover:bg-teal-50"
+                        class="border border-teal-600 text-teal-600 px-4 py-2 rounded-md hover:bg-teal-50 font-medium transition-all duration-300"
                     >
                         Log In
                     </Link>
                     <Link
                         :href="route('register')"
-                        class="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700"
+                        class="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 font-medium transition-all duration-300 shadow-md hover:shadow-lg"
                     >
                         Sign up for free
                     </Link>
@@ -160,24 +171,24 @@ onMounted(() => {
         <div class="h-16 lg:hidden w-full"></div>
 
         <!-- Hero Section -->
-        <section class="bg-gradient-to-b from-gray-50 to-teal-50 py-20">
+        <section class="bg-gradient-to-b from-gray-50 to-teal-50 py-32 pt-40">
             <div
                 class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex flex-col lg:flex-row items-center"
             >
-                <div class="lg:w-1/2">
-                    <h1 class="text-5xl font-bold text-gray-900 leading-tight">
+                <div class="lg:w-1/2 animate-fade-in-up">
+                    <h1 class="text-5xl md:text-6xl font-bold text-gray-900 leading-tight mb-6">
                         Learn the Holy Qur'an.<br />
-                        One-on-One,<br />
+                        <span class="text-teal-600">One-on-One,</span><br />
                         Anywhere.
                     </h1>
-                    <p class="mt-6 text-xl text-gray-700">
+                    <p class="mt-6 text-xl text-gray-700 max-w-lg">
                         Embark on a transformative journey of faith and
                         knowledge. Master Quranic recitation with expert
                         guidance and authentic Islamic teachings.
                     </p>
                     <div class="mt-8 flex flex-wrap gap-4">
                         <div
-                            class="bg-white shadow-md rounded-lg px-6 py-4 flex items-center space-x-4"
+                            class="bg-white shadow-lg rounded-xl px-6 py-4 flex items-center space-x-4 transform transition-transform duration-300 hover:scale-105"
                         >
                             <span class="text-2xl">🎯</span>
                             <div>
@@ -188,7 +199,7 @@ onMounted(() => {
                             </div>
                         </div>
                         <div
-                            class="bg-white shadow-md rounded-lg px-6 py-4 flex items-center space-x-4"
+                            class="bg-white shadow-lg rounded-xl px-6 py-4 flex items-center space-x-4 transform transition-transform duration-300 hover:scale-105"
                         >
                             <span class="text-2xl">👨‍🏫</span>
                             <div>
@@ -199,24 +210,29 @@ onMounted(() => {
                             </div>
                         </div>
                     </div>
-                    <button
-                        class="mt-10 bg-teal-600 text-white text-lg px-8 py-4 rounded-md hover:bg-teal-700 shadow-lg"
-                    >
-                        Start Learning
-                    </button>
+                    <div class="mt-10">
+                        <Link
+                            :href="route('register')"
+                            class="inline-block bg-teal-600 text-white text-lg px-8 py-4 rounded-xl hover:bg-teal-700 shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                        >
+                            Start Learning
+                        </Link>
+                    </div>
                 </div>
-                <div class="lg:w-1/2 relative mt-10 lg:mt-0 flex justify-center overflow-hidden">
-                    <img
-                        src="/images/1_student.png"
-                        alt="Child learning Quran"
-                        class="mx-auto w-full max-w-xs sm:max-w-md md:max-w-2xl h-auto object-cover rounded-none border border-gray-100"
-                    />
-                    <div
-                        class="absolute top-10 right-10 bg-teal-400 rounded-full w-16 h-16 sm:w-32 sm:h-32"
-                    ></div>
-                    <div
-                        class="absolute bottom-0 left-20 bg-teal-500 rounded-full w-24 h-24 sm:w-48 sm:h-48"
-                    ></div>
+                <div class="lg:w-1/2 relative mt-10 lg:mt-0 flex justify-center overflow-hidden animate-fade-in">
+                    <div class="relative">
+                        <img
+                            src="/images/1_student.png"
+                            alt="Child learning Quran"
+                            class="mx-auto w-full max-w-xs sm:max-w-md md:max-w-2xl h-auto object-cover rounded-xl border-8 border-white shadow-2xl transform transition-transform duration-500 hover:rotate-1"
+                        />
+                        <div
+                            class="absolute -top-6 -right-6 bg-teal-400 rounded-full w-16 h-16 sm:w-24 sm:h-24 opacity-80 animate-pulse"
+                        ></div>
+                        <div
+                            class="absolute -bottom-8 -left-8 bg-teal-500 rounded-full w-24 h-24 sm:w-32 sm:h-32 opacity-80 animate-pulse delay-300"
+                        ></div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -235,17 +251,17 @@ onMounted(() => {
         <!-- Key Features -->
         <section class="py-20 bg-gray-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-                <h2 class="text-4xl font-bold text-center text-teal-600 mb-12">
+                <h2 class="text-4xl font-bold text-center text-teal-600 mb-12 animate-fade-in">
                     Key Features
                 </h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="bg-white rounded-2xl shadow-md p-8 text-center">
+                    <div class="bg-white rounded-2xl shadow-lg p-8 text-center transform transition-all duration-300 hover:scale-105 hover:shadow-xl animate-fade-in-up">
                         <div
-                            class="bg-teal-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center text-3xl mb-4"
+                            class="bg-gradient-to-r from-teal-100 to-cyan-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center text-3xl mb-4"
                         >
                             📊
                         </div>
-                        <h3 class="text-xl font-semibold">
+                        <h3 class="text-xl font-semibold text-gray-800">
                             Track your progress
                         </h3>
                         <p class="mt-4 text-gray-600">
@@ -254,10 +270,10 @@ onMounted(() => {
                         </p>
                     </div>
                     <div
-                        class="bg-teal-600 text-white rounded-2xl shadow-md p-8 text-center"
+                        class="bg-gradient-to-br from-teal-600 to-teal-700 text-white rounded-2xl shadow-lg p-8 text-center transform transition-all duration-300 hover:scale-105 hover:shadow-xl animate-fade-in-up delay-100"
                     >
                         <div
-                            class="bg-teal-700 rounded-full w-16 h-16 mx-auto flex items-center justify-center text-3xl mb-4"
+                            class="bg-teal-800 rounded-full w-16 h-16 mx-auto flex items-center justify-center text-3xl mb-4"
                         >
                             📖
                         </div>
@@ -269,13 +285,13 @@ onMounted(() => {
                             synced.
                         </p>
                     </div>
-                    <div class="bg-white rounded-2xl shadow-md p-8 text-center">
+                    <div class="bg-white rounded-2xl shadow-lg p-8 text-center transform transition-all duration-300 hover:scale-105 hover:shadow-xl animate-fade-in-up delay-200">
                         <div
-                            class="bg-teal-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center text-3xl mb-4"
+                            class="bg-gradient-to-r from-teal-100 to-cyan-100 rounded-full w-16 h-16 mx-auto flex items-center justify-center text-3xl mb-4"
                         >
                             💬
                         </div>
-                        <h3 class="text-xl font-semibold">
+                        <h3 class="text-xl font-semibold text-gray-800">
                             Chat with student & Teacher
                         </h3>
                         <p class="mt-4 text-gray-600">
@@ -287,23 +303,23 @@ onMounted(() => {
         </section>
 
         <!-- About Us -->
-        <section class="py-20 bg-gray-50">
+        <section class="py-20 bg-white">
             <div
-                class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex flex-col lg:flex-row items-center gap-0"
+                class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex flex-col lg:flex-row items-center gap-12"
             >
-                <div class="lg:w-1/2 h-96 w-full">
-                    <div class="h-full rounded-2xl overflow-hidden shadow-xl">
+                <div class="lg:w-1/2 h-96 w-full animate-fade-in-up">
+                    <div class="h-full rounded-2xl overflow-hidden shadow-xl border-8 border-white">
                         <img
                             src="/images/student_img.png"
                             alt="Learning Quran"
-                            class="w-full h-full object-cover"
+                            class="w-full h-full object-cover transform transition-transform duration-500 hover:scale-105"
                         />
                     </div>
                 </div>
                 <div
-                    class="lg:w-1/2 bg-teal-50 rounded-2xl p-10 h-96 flex flex-col justify-center w-full"
+                    class="lg:w-1/2 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-10 h-auto flex flex-col justify-center w-full shadow-lg animate-fade-in-up delay-100"
                 >
-                    <h2 class="text-4xl font-bold text-teal-600 mb-6">
+                    <h2 class="text-4xl font-bold text-teal-700 mb-6">
                         About Us
                     </h2>
                     <p class="text-lg text-gray-700 mb-4">
@@ -324,33 +340,51 @@ onMounted(() => {
         </section>
 
         <!-- Footer -->
-        <footer class="bg-teal-700 text-white py-12">
+        <footer class="bg-gradient-to-r from-teal-700 to-teal-800 text-white py-16">
             <div
-                class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex flex-col md:flex-row justify-between items-center"
+                class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex flex-col md:flex-row justify-between items-start"
             >
-                <div class="flex items-center mb-6 md:mb-0 w-full">
+                <div class="flex flex-col items-center md:items-start mb-10 md:mb-0 w-full md:w-auto">
                     <img
                         src="/images/app_logo.jpg"
                         alt="Logo"
-                        class="h-20 w-40 md:h-24 md:w-48 bg-white rounded-lg object-cover max-w-full"
+                        class="h-20 w-40 md:h-24 md:w-48 bg-white rounded-xl object-cover max-w-full shadow-lg mb-4"
                     />
+                    <p class="text-teal-200 text-center md:text-left mt-4 max-w-xs">
+                        Connecting students and teachers for one-on-one Qur'an learning – anywhere in the world.
+                    </p>
                 </div>
-                <div class="text-center md:text-left w-full mt-4 md:mt-0">
-                    <p class="font-semibold mb-2">Support and help team</p>
-                    <p>1on1quranclasses25@gmail.com</p>
-                    <div class="mt-4">
-                        <p class="font-semibold">Quick Links</p>
-                        <p>Home</p>
-                        <p>About</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full mt-8 md:mt-0">
+                    <div>
+                        <p class="font-semibold text-lg mb-4 text-teal-200">Quick Links</p>
+                        <ul class="space-y-2">
+                            <li><Link :href="route('welcome')" class="hover:text-teal-200 transition-colors">Home</Link></li>
+                            <li><Link :href="route('login')" class="hover:text-teal-200 transition-colors">About Us</Link></li>
+                            <li><Link :href="route('login')" class="hover:text-teal-200 transition-colors">Contact</Link></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <p class="font-semibold text-lg mb-4 text-teal-200">Support</p>
+                        <ul class="space-y-2">
+                            <li class="text-teal-100">1on1quranclasses25@gmail.com</li>
+                            <li class="text-teal-100 mt-4">Support Hours: Mon-Fri, 9AM-6PM EST</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <p class="font-semibold text-lg mb-4 text-teal-200">Contact Us</p>
+                        <ul class="space-y-2">
+                            <li class="text-teal-100">(678) 209-599, 470-783-3604</li>
+                            <li class="text-teal-100 mt-4">1on1quranclasses250@gmail.com</li>
+                        </ul>
                     </div>
                 </div>
-                <div class="text-center md:text-right mt-4 md:mt-0 w-full">
-                    <p class="font-semibold mb-2">Contact Us</p>
-                    <p>Phone</p>
-                    <p>(678) 209-599, 470-783-3604</p>
-                    <p class="mt-4">Email</p>
-                    <p>1on1quranclasses250@gmail.com</p>
-                </div>
+            </div>
+
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-teal-600 text-center text-teal-300">
+                <p>&copy; {{ new Date().getFullYear() }} 1-on-1 Quran Classes. All rights reserved.</p>
             </div>
         </footer>
     </body>

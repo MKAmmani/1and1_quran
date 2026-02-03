@@ -15,8 +15,8 @@ return [
     |
     */
 
-    // Use the BROADCAST_CONNECTION env var to choose broadcaster; default to 'reverb' for local development
-    'default' => env('BROADCAST_CONNECTION', 'reverb'),
+    // Use the BROADCAST_CONNECTION env var to choose broadcaster; default to 'pusher' as configured in .env
+    'default' => env('BROADCAST_CONNECTION', 'pusher'),
 
     /*
     |--------------------------------------------------------------------------
@@ -49,9 +49,9 @@ return [
 
         'pusher' => [
             'driver' => 'pusher',
-            'key' => 'dummy',
-            'secret' => 'dummy',
-            'app_id' => 'dummy',
+            'key' => env('PUSHER_APP_KEY'),
+            'secret' => env('PUSHER_APP_SECRET'),
+            'app_id' => env('PUSHER_APP_ID'),
             'options' => [
                 'cluster' => env('PUSHER_APP_CLUSTER'),
                 'host' => env('PUSHER_HOST') ?: 'api-'.env('PUSHER_APP_CLUSTER', 'mt1').'.pusher.com',
@@ -59,9 +59,13 @@ return [
                 'scheme' => env('PUSHER_SCHEME', 'https'),
                 'encrypted' => true,
                 'useTLS' => env('PUSHER_SCHEME', 'https') === 'https',
+                // Additional options for timeout
+                'timeout' => 30, // Timeout for the Pusher API call
             ],
             'client_options' => [
                 // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
+                'timeout' => 30, // Connection timeout in seconds
+                'connect_timeout' => 10, // Connection timeout specifically
             ],
         ],
 

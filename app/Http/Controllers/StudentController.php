@@ -72,8 +72,17 @@ class StudentController extends Controller
             ['status' => 'pending']
         );
 
-        // Broadcast an event to the teacher
-        event(new \App\Events\JoinRequestSent($joinRequest));
+        // Broadcast an event to the teacher with error handling
+        try {
+            event(new \App\Events\JoinRequestSent($joinRequest));
+        } catch (\Exception $e) {
+            // Log the broadcasting error but continue with the request
+            \Log::warning('Failed to broadcast join request event: ' . $e->getMessage(), [
+                'live_session_id' => $liveSession->id,
+                'student_id' => $student->id,
+                'error' => $e->getMessage()
+            ]);
+        }
 
         return redirect()->route('student.waiting-approval', [
             'liveSession' => $liveSession,

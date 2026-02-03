@@ -19,26 +19,23 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 // Ensure cookies (session) are sent with requests from Vite dev server so /broadcasting/auth works
 window.axios.defaults.withCredentials = true; */
 
-// Only initialize Echo if Reverb environment variables are set
-if (import.meta.env.VITE_REVERB_APP_KEY) {
+// Only initialize Echo if Pusher environment variables are set
+if (import.meta.env.VITE_PUSHER_APP_KEY) {
     window.Echo = new Echo({
-        broadcaster: 'reverb',
-        key: import.meta.env.VITE_REVERB_APP_KEY,
-        wsHost: import.meta.env.VITE_REVERB_HOST,
-        wsPort: import.meta.env.VITE_REVERB_PORT,
-        wssPort: import.meta.env.VITE_REVERB_PORT,
-        forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'http') === 'https',
-        enabledTransports: ['ws', 'wss'],
-        // Ensure cookies are sent for authentication
-        withCredentials: true,
+        broadcaster: 'pusher',
+        key: import.meta.env.VITE_PUSHER_APP_KEY,
+        cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
+        forceTLS: true,
+        // Ensure cookies are sent for authentication if your app needs it
+        withCredentials: true, 
     });
 } else {
-    // Fallback for development without Reverb
+    // Fallback for development without Pusher
     window.Echo = {
         channel: function() {
             return {
                 listen: function() {
-                    console.warn('Reverb not configured. Chat functionality will not work.');
+                    console.warn('Pusher not configured. Real-time functionality will not work.');
                     return this;
                 },
                 stop: function() {}
@@ -47,7 +44,7 @@ if (import.meta.env.VITE_REVERB_APP_KEY) {
         private: function() {
             return {
                 listen: function() {
-                    console.warn('Reverb not configured. Chat functionality will not work.');
+                    console.warn('Pusher not configured. Real-time functionality will not work.');
                     return this;
                 },
                 stop: function() {}

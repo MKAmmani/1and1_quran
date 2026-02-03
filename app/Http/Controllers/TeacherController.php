@@ -21,32 +21,11 @@ class TeacherController extends Controller
         $teacher = auth()->user();
 
         // Get all unique students who have participated in the teacher's sessions.
-        $studentIds = SessionParticipant::whereIn('live_session_id', function ($query) use ($teacher) {
-            $query->select('id')->from('live_sessions')->where('teacher_id', $teacher->id);
-        })->distinct()->pluck('user_id');
-
-        $students = User::whereIn('id', $studentIds)
+        $students = User::where('role', UserRole::Student)
             ->with(['studentProgress' => function ($query) use ($teacher) {
                 $query->where('teacher_id', $teacher->id);
             }])
-            ->get()
-            ->map(function ($student) {
-                $last_activity = \DB::table('sessions')->where('user_id', $student->id)->max('last_activity');
-                $student->online = $last_activity ? (time() - $last_activity) < 300 : false;
-
-                $progress = $student->studentProgress->first();
-
-                if ($progress && $progress->surah_id) {
-                    $student->progress = floor((($progress->surah_id - 1) / 114) * 100);
-                    $student->surahs_completed = $progress->surah_id - 1;
-                    $student->current_surah_id = $progress->surah_id;
-                } else {
-                    $student->progress = 0;
-                    $student->surahs_completed = 0;
-                    $student->current_surah_id = null;
-                }
-                return $student;
-            });
+            ->get();
 
         // Quick Stats
         $totalStudents = $students->count();
@@ -82,29 +61,11 @@ class TeacherController extends Controller
     public function prepare_class(QuranApiService $quran)
     {
         $teacher = auth()->user();
-        $studentIds = SessionParticipant::whereIn('live_session_id', function ($query) use ($teacher) {
-            $query->select('id')->from('live_sessions')->where('teacher_id', $teacher->id);
-        })->distinct()->pluck('user_id');
-        
-        $students = User::whereIn('id', $studentIds)
+        $students = User::where('role', UserRole::Student)
             ->with(['studentProgress' => function ($query) use ($teacher) {
                 $query->where('teacher_id', $teacher->id);
             }])
-            ->get()
-            ->map(function ($student) {
-                $progress = $student->studentProgress->first();
-
-                if ($progress && $progress->surah_id) {
-                    $student->surahs_completed = $progress->surah_id - 1;
-                    $student->current_surah_id = $progress->surah_id;
-                    $student->progress = floor((($progress->surah_id - 1) / 114) * 100);
-                } else {
-                    $student->surahs_completed = 0;
-                    $student->current_surah_id = null;
-                    $student->progress = 0;
-                }
-                return $student;
-            });
+            ->get();
 
         $surahs = $quran->getChapters();
 
@@ -117,10 +78,7 @@ class TeacherController extends Controller
     public function announcement()
     {
         $teacher = auth()->user();
-        $studentIds = SessionParticipant::whereIn('live_session_id', function ($query) use ($teacher) {
-            $query->select('id')->from('live_sessions')->where('teacher_id', $teacher->id);
-        })->distinct()->pluck('user_id');
-        $students = User::whereIn('id', $studentIds)->get();
+        $students = User::where('role', UserRole::Student)->get();
 
         return inertia('Teacher/Announcement', [
             'students' => $students,
@@ -132,32 +90,11 @@ class TeacherController extends Controller
         $teacher = auth()->user();
 
         // Get all unique students who have participated in the teacher's sessions.
-        $studentIds = SessionParticipant::whereIn('live_session_id', function ($query) use ($teacher) {
-            $query->select('id')->from('live_sessions')->where('teacher_id', $teacher->id);
-        })->distinct()->pluck('user_id');
-
-        $students = User::whereIn('id', $studentIds)
+        $students = User::where('role', UserRole::Student)
             ->with(['studentProgress' => function ($query) use ($teacher) {
                 $query->where('teacher_id', $teacher->id);
             }])
-            ->get()
-            ->map(function ($student) {
-                $last_activity = \DB::table('sessions')->where('user_id', $student->id)->max('last_activity');
-                $student->online = $last_activity ? (time() - $last_activity) < 300 : false;
-
-                $progress = $student->studentProgress->first();
-
-                if ($progress && $progress->surah_id) {
-                    $student->progress = floor((($progress->surah_id - 1) / 114) * 100);
-                    $student->surahs_completed = $progress->surah_id - 1;
-                    $student->current_surah_id = $progress->surah_id;
-                } else {
-                    $student->progress = 0;
-                    $student->surahs_completed = 0;
-                    $student->current_surah_id = null;
-                }
-                return $student;
-            });
+            ->get();
 
         $surahs = $quran->getChapters();
 
@@ -273,7 +210,7 @@ class TeacherController extends Controller
     public function end(LiveSession $liveSession)
     {
         // Ensure the authenticated user is the teacher of this session
-        if ($liveSession->teacher_id !== auth()->id()) {
+        if (auth()->user()->role !== UserRole::Teacher) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -288,7 +225,7 @@ class TeacherController extends Controller
     public function getJoinRequests(LiveSession $liveSession)
     {
         // Ensure the authenticated user is the teacher of this session
-        if ($liveSession->teacher_id !== auth()->id()) {
+        if (auth()->user()->role !== UserRole::Teacher) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -300,7 +237,7 @@ class TeacherController extends Controller
     public function approveJoinRequest(\App\Models\JoinRequest $joinRequest)
     {
         // Ensure the authenticated user is the teacher of this session
-        if ($joinRequest->liveSession->teacher_id !== auth()->id()) {
+        if (auth()->user()->role !== UserRole::Teacher) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -336,7 +273,7 @@ class TeacherController extends Controller
     public function declineJoinRequest(\App\Models\JoinRequest $joinRequest)
     {
         // Ensure the authenticated user is the teacher of this session
-        if ($joinRequest->liveSession->teacher_id !== auth()->id()) {
+        if (auth()->user()->role !== UserRole::Teacher) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -368,7 +305,7 @@ class TeacherController extends Controller
     public function changeQuranVerse(Request $request, LiveSession $liveSession)
     {
         try {
-            if ($liveSession->teacher_id !== auth()->id()) {
+            if (auth()->user()->role !== UserRole::Teacher) {
                 \Log::warning('Unauthorized attempt to change Quran verse', [
                     'user_id' => auth()->id(),
                     'session_id' => $liveSession->id,

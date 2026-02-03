@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\ChatMessageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StudentController;
@@ -10,6 +11,15 @@ use App\Enums\UserRole;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\VideoSDKTokenController;
 use App\Http\Controllers\QuranController;
+use Illuminate\Support\Facades\Artisan;
+
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
+
+Route::get('/clear-cache', function() {
+    Artisan::call('config:cache');
+    return "Configuration cache has been cleared!";
+});
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -37,9 +47,6 @@ Route::post('/video-sdk/token', [VideoSDKTokenController::class, 'generate'])
     ->name('video-sdk.token');
 
 Route::middleware(['auth'])->group(function () {
-    // Custom broadcasting authentication for enhanced security
-    Route::post('/broadcasting/socket-auth', [\App\Http\Controllers\BroadcastingController::class, 'authenticate']);
-
     Route::get('/live-sessions/{liveSession}/chat', [ChatMessageController::class, 'index']);
     Route::post('/chat-messages', [ChatMessageController::class, 'store']);
     Route::post('/live-sessions/{liveSession}/end', [TeacherController::class, 'end'])->name('live-sessions.end');

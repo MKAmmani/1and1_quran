@@ -280,6 +280,7 @@ const endSession = async () => {
     router.get(route('teacher.index'))
   } catch (e) {
     console.error('Failed to end session', e)
+    alert('Could not end the session. Please check your connection and try again. If the problem persists, you may need to close this tab and start a new session.');
   }
 }
 
@@ -363,7 +364,6 @@ onMounted(async () => {
               videoContainerElement.appendChild(videoPlayerElement);
               // Then attach video
               await mediaStream.attachVideo(participant.userId, videoPlayerElement);
-              console.log(`Rendering video for user ${participant.userId}`);
             } catch (e) {
               console.error(`Error rendering video for user ${participant.userId}`, e);
             }

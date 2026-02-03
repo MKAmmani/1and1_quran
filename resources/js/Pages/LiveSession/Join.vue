@@ -4,6 +4,7 @@ import axios from 'axios';
 import { router, usePage } from '@inertiajs/vue3';
 import client, { initZoom } from '@/zoom/client';
 
+
 const $page = usePage();
 
 const props = defineProps({
@@ -18,7 +19,7 @@ const isChatOpen = ref(false); // Start with chat closed by default
 const messages = ref([]);
 const newMessage = ref('');
 const chatMessagesRef = ref(null);
-const isVideoOn = ref(false); // Student's video is off by default
+const isVideoOn = ref(true); // Student's video is on by default
 const isAudioOn = ref(true);
 const participants = ref([]);
 
@@ -28,7 +29,8 @@ const selectedSurah = ref(null);
 const selectedAyah = ref(null);
 const selectedSurahId = ref(null);
 
-let mediaStream = null;
+// No longer need local mediaStream - use zoomMediaStream from video-handler.js
+let mediaStream = null; 
 
 const sessionStartTime = ref(null);
 const sessionDuration = ref('00:00');
@@ -42,19 +44,22 @@ const syncParticipants = () => {
 // Video and audio controls
 const toggleVideo = async () => {
   try {
-    const mediaStream = client.getMediaStream();
-    if (isVideoOn.value) {
-      await mediaStream.stopVideo();
-      await removeSelfVideo();
+    if (mediaStream.isSupportFeature('video', 'start')) { // Check if video is supported
+      if (isVideoOn.value) {
+        await mediaStream.stopVideo();
+      } else {
+        await mediaStream.startVideo();
+      }
+      isVideoOn.value = !isVideoOn.value;
     } else {
-      await mediaStream.startVideo();
-      await renderSelfVideo();
+      console.warn('Video feature not supported or already in use.');
     }
-    isVideoOn.value = !isVideoOn.value;
   } catch (error) {
     console.error('Error toggling video:', error);
     if (error.errorCode === 6103) {
       alert('Camera is already in use by another program. Please close other applications using the camera and try again.');
+    } else if (error.type === "VIDEO_USER_FORBIDDEN_CAPTURE") {
+      alert('Camera access denied. Please allow camera permissions in your browser settings.');
     } else {
       alert('Error toggling video: ' + (error.reason || error.message));
     }
@@ -63,15 +68,19 @@ const toggleVideo = async () => {
 
 const toggleAudio = async () => {
   try {
-    const mediaStream = client.getMediaStream();
-    if (isAudioOn.value) {
-      await mediaStream.muteAudio();
+    if (mediaStream.isSupportFeature('audio', 'start')) { // Check if audio is supported
+      if (isAudioOn.value) {
+        await mediaStream.muteAudio();
+      } else {
+        await mediaStream.unmuteAudio();
+      }
+      isAudioOn.value = !isAudioOn.value;
     } else {
-      await mediaStream.unmuteAudio();
+      console.warn('Audio feature not supported or already in use.');
     }
-    isAudioOn.value = !isAudioOn.value;
   } catch (error) {
     console.error('Error toggling audio:', error);
+    alert('Error toggling audio: ' + (error.reason || error.message));
   }
 };
 
@@ -81,73 +90,11 @@ const toggleScreenShare = async () => {
 };
 
 const renderSelfVideo = async () => {
-  const selfId = client.getCurrentUserInfo().userId;
-  const videoContainer = document.getElementById('video-container');
-  const videoId = `video-${selfId}`;
-  const wrapperId = `wrapper-${selfId}`;
-
-  if (!document.getElementById(videoId)) {
-    try {
-      // Create a wrapper div for better layout control
-      const videoWrapper = document.createElement('div');
-      videoWrapper.id = wrapperId;
-      videoWrapper.style.flex = '1 1 auto';
-      videoWrapper.style.position = 'relative';
-      videoWrapper.style.margin = '2px';
-      videoWrapper.style.minWidth = '200px';
-      videoWrapper.style.minHeight = '150px';
-      videoWrapper.style.maxWidth = '300px';
-      videoWrapper.style.display = 'flex';
-      videoWrapper.style.alignItems = 'center';
-      videoWrapper.style.justifyContent = 'center';
-
-      let videoElement = document.createElement('video');
-      videoElement.id = videoId;
-      videoElement.autoplay = true;
-      videoElement.playsInline = true;
-      videoElement.muted = true; // Mute self video to avoid echo
-
-      // Style the video element
-      videoElement.style.width = '100%';
-      videoElement.style.height = '100%';
-      videoElement.style.objectFit = 'cover';
-      videoElement.style.display = 'block';
-      videoElement.style.borderRadius = '4px';
-
-      // Add the video element to the wrapper
-      videoWrapper.appendChild(videoElement);
-
-      // Append wrapper to video container
-      videoContainer.appendChild(videoWrapper);
-
-      // Wait a bit to ensure the element is in the DOM before attaching
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Then attach video
-      await mediaStream.attachVideo(selfId, videoElement);
-
-      console.log(`Rendering self video for user ${selfId}`);
-    } catch (e) {
-      console.error(`Error rendering self video for user ${selfId}`, e);
-    }
-  }
+  // Intentionally do nothing to prevent local self-video rendering
 };
 
 const removeSelfVideo = async () => {
-  const selfId = client.getCurrentUserInfo().userId;
-  const videoId = `video-${selfId}`;
-  const videoElement = document.getElementById(videoId);
-  if (videoElement) {
-    videoElement.remove();
-    console.log(`Removed self video for user ${selfId}`);
-  }
-  if (mediaStream) {
-    try {
-      await mediaStream.detachVideo(selfId);
-    } catch (e) {
-      console.error('Error detaching self video:', e);
-    }
-  }
+  // Intentionally do nothing as local self-video is not rendered
 };
 
 
@@ -307,24 +254,18 @@ onMounted(async () => {
     // Always fetch surahs if needed, but not here
     handleResize();
     window.addEventListener('resize', handleResize);
-  console.log('Join.vue mounted with props:', props);
-  console.log('Current URL:', window.location.href);
-  console.log('User arrived at Join.vue at:', new Date().toISOString());
   const videoContainer = document.getElementById('video-container');
 
   try {
     await initZoom();
-    console.log('Zoom SDK initialized.');
 
     const { data } = await axios.post('/video-sdk/token', {
       session_name: props.sessionName,
       role: 0,
     });
     token.value = data.token;
-    console.log('Successfully fetched token.');
 
     await client.join(props.sessionName, token.value, props.userName);
-    console.log('Joined Zoom session successfully!');
 
     sessionStartTime.value = new Date();
     durationInterval = setInterval(() => {
@@ -339,54 +280,28 @@ onMounted(async () => {
 
     mediaStream = client.getMediaStream();
 
-    // Start local audio
+    // Start local audio and video
     await mediaStream.startAudio({ audio: true });
-    console.log('Local audio started.');
+    await mediaStream.startVideo();
 
     const renderVideo = async (participant) => {
+      // Only render the teacher's video
+      if (participant.userId !== props.liveSession.teacher_id) {
+        return;
+      }
       if (participant.bVideoOn) {
         const videoId = `video-${participant.userId}`;
         if (!document.getElementById(videoId)) {
             try {
-              // Create a wrapper div for better layout control
-              const videoWrapper = document.createElement('div');
-              videoWrapper.id = `wrapper-${participant.userId}`;
-              videoWrapper.style.flex = '1 1 auto';
-              videoWrapper.style.position = 'relative';
-              videoWrapper.style.margin = '2px';
-              videoWrapper.style.minWidth = '200px';
-              videoWrapper.style.minHeight = '150px';
-              videoWrapper.style.maxWidth = '300px';
-              videoWrapper.style.display = 'flex';
-              videoWrapper.style.alignItems = 'center';
-              videoWrapper.style.justifyContent = 'center';
-
-              let videoElement = document.createElement('video');
-              videoElement.id = videoId;
-              videoElement.autoplay = true;
-              videoElement.playsInline = true;
-              videoElement.muted = false; // Allow audio for other participants
-
-              // Style the video element
-              videoElement.style.width = '100%';
-              videoElement.style.height = '100%';
-              videoElement.style.objectFit = 'cover';
-              videoElement.style.display = 'block';
-              videoElement.style.borderRadius = '4px';
-
-              // Add the video element to the wrapper
-              videoWrapper.appendChild(videoElement);
-
-              // Append wrapper to video container
-              videoContainer.appendChild(videoWrapper);
-
-              // Wait a bit to ensure the element is in the DOM before attaching
-              await new Promise(resolve => setTimeout(resolve, 100));
-
-              // Then attach video
-              await mediaStream.attachVideo(participant.userId, videoElement);
-
-              console.log(`Rendering video for user ${participant.userId}`);
+              let videoPlayerElement = document.createElement('video-player');
+              videoPlayerElement.id = videoId;
+              videoPlayerElement.style.width = '100%';
+              videoPlayerElement.style.height = '100%';
+              videoPlayerElement.style.position = 'absolute';
+              videoPlayerElement.style.top = '0';
+              videoPlayerElement.style.left = '0';
+              videoContainer.appendChild(videoPlayerElement);
+              await mediaStream.attachVideo(participant.userId, videoPlayerElement);
             } catch (e) {
               console.error(`Error rendering video for user ${participant.userId}`, e);
             }
@@ -421,14 +336,12 @@ onMounted(async () => {
 
     // Render videos for participants already in the session
     syncParticipants();
-    console.log('Existing participants:', participants.value);
     for (const participant of participants.value) {
       await renderVideo(participant);
     }
     
     // Handle new users joining
     client.on('user-added', async (payload) => {
-      console.log('User added:', payload);
       syncParticipants();
       for (const user of payload) {
         await renderVideo(user);
@@ -437,7 +350,6 @@ onMounted(async () => {
 
     // Handle users leaving
     client.on('user-removed', async (payload) => {
-      console.log('User removed:', payload);
       syncParticipants();
       for (const user of payload) {
         await removeVideo(user.userId);
@@ -446,7 +358,6 @@ onMounted(async () => {
     
     // Handle user video state updates
     client.on('user-updated', async (payload) => {
-      console.log('User updated:', payload);
       syncParticipants();
       for (const user of payload) {
         if(user.bVideoOn) {
@@ -459,7 +370,6 @@ onMounted(async () => {
 
     // Handle remote user's video state changes
     client.on('peer-video-state-change', async (payload) => {
-      console.log('Peer video state change:', payload);
       if (payload.action === 'Start') {
         await renderVideo(payload);
       } else if (payload.action === 'Stop') {
@@ -468,19 +378,8 @@ onMounted(async () => {
     });
 
     await fetchMessages();
-    console.log('Initial messages fetched.');
 
     if (window.Echo) {
-      console.log('Setting up Echo listener for live-session.' + props.liveSession.id);
-      // Debug: verify broadcasting auth endpoint is reachable before subscribing
-      try {
-        const authResp = await axios.post('/broadcasting/auth');
-        console.log('Broadcast auth response (full):', authResp);
-        console.log('Broadcast auth status:', authResp.status, 'headers:', authResp.headers);
-      } catch (authErr) {
-        console.error('Broadcast auth failed:', authErr.response ? authErr.response : authErr);
-      }
-
       echoListener = window.Echo.private(`live-session.${props.liveSession.id}`)
         .listen('.chat.message', (e) => {
           const messageExists = messages.value.some(msg => msg.id === e.chatMessage.id);
@@ -724,7 +623,7 @@ onUnmounted(() => {
                 </div>
               <div v-else class="max-w-4xl w-full h-full flex items-center justify-center relative">
                 <!-- Video container for Zoom SDK -->
-                <div id="video-container" class="video-player-container w-full h-full flex flex-wrap items-center justify-center bg-black rounded-lg overflow-hidden" style="z-index: 1; min-height: 300px; position: relative;"></div>
+                <video-player-container id="video-container" class="video-player-container w-full h-full flex flex-wrap items-center justify-center bg-black rounded-lg overflow-hidden" style="z-index: 1; min-height: 300px; position: relative;"></video-player-container>
                 <div
                     class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full z-10">
                   <button @click="toggleScreenShare" class="text-white hover:text-primary transition-colors p-2">
